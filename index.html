@@ -1,1 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>html{-webkit-text-size-adjust:100%}</style>
+<title>R 4 Dummies</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --accent: #4f8ef7;
+    --accent2: #7c3aed;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --border: #2d3148;
+    --code-bg: #0d1117;
+    --r-blue: #276DC3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── SHARED INPUTS & BUTTONS ── */
+  input[type=text] { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 1rem; width: 100%; outline: none; transition: border-color .2s; }
+  input[type=text]:focus { border-color: var(--accent); }
+  .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3b7de8; }
+  .btn-secondary { background: var(--surface2); color: var(--text); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-success:hover { background: #16a34a; }
+  .existing-users { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .user-chip { padding: 8px 18px; border-radius: 20px; background: var(--surface2); border: 1px solid var(--border); cursor: pointer; font-size: 0.88rem; font-weight: 600; color: var(--text); transition: all .2s; }
+  .user-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,142,247,.08); }
+
+  /* ── LANDING PAGE ── */
+  #login-screen { flex-direction:column; overflow-y:auto; overflow-x:hidden; align-items:center; position:relative; }
+
+  /* Blobs */
+  .lp-blobs { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .lp-blob { position:absolute; border-radius:50%; filter:blur(85px); animation:blobFloat 16s ease-in-out infinite; }
+  .lp-blob.b1 { width:580px; height:580px; background:#4f8ef7; opacity:0.15; top:-130px; left:-110px; animation-duration:13s; }
+  .lp-blob.b2 { width:480px; height:480px; background:#7c3aed; opacity:0.13; bottom:-60px; right:-90px; animation-duration:19s; animation-delay:-5s; }
+  .lp-blob.b3 { width:400px; height:400px; background:#22c55e; opacity:0.10; top:55%; left:18%; animation-duration:21s; animation-delay:-12s; }
+  .lp-blob.b4 { width:320px; height:320px; background:#f59e0b; opacity:0.09; top:15%; right:15%; animation-duration:14s; animation-delay:-3s; }
+  @keyframes blobFloat {
+    0%,100%{ transform:translate(0,0) scale(1); }
+    33%    { transform:translate(32px,-26px) scale(1.07); }
+    66%    { transform:translate(-20px,22px) scale(0.94); }
+  }
+
+  /* Centered container */
+  .lp-center { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:72px 24px calc(48px + env(safe-area-inset-bottom)); width:100%; max-width:680px; margin:0 auto; gap:28px; }
+
+  /* Title */
+  .lp-big-title { font-size:clamp(3.4rem,10vw,5.8rem); font-weight:900; line-height:1; letter-spacing:-0.03em; background:linear-gradient(160deg,#fff 0%,#94a3b8 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  /* Tagline — animated color shimmer */
+  .lp-tagline { font-size:clamp(0.95rem,2.8vw,1.1rem); font-style:italic; font-weight:500; background:linear-gradient(90deg,#60a5fa,#a78bfa,#34d399,#f59e0b,#60a5fa); background-size:300% auto; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:shimmer 4s linear infinite; margin-top:-10px; }
+  @keyframes shimmer { to { background-position:300% center; } }
+
+  /* Code window */
+  .lp-code-win { width:100%; max-width:600px; background:rgba(10,13,20,0.88); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-radius:14px; overflow:hidden; box-shadow:0 40px 80px rgba(0,0,0,.55); position:relative; }
+  .lp-code-win::before { content:''; position:absolute; inset:-1px; border-radius:15px; background:linear-gradient(90deg,#4f8ef7,#7c3aed,#22c55e,#f59e0b,#4f8ef7); background-size:400% 100%; animation:gradBorder 5s linear infinite; z-index:-1; }
+  @keyframes gradBorder { to { background-position:400% 0; } }
+
+  .lp-win-bar { background:rgba(20,23,33,0.97); padding:11px 16px; display:flex; align-items:center; gap:7px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .win-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .win-dot.r{background:#ff5f57} .win-dot.y{background:#ffbd2e} .win-dot.g{background:#28c840}
+  .win-title { margin-left:6px; font-size:0.7rem; color:var(--muted); flex:1; text-align:center; }
+  .lp-win-tabs { display:flex; background:rgba(12,14,22,0.8); border-bottom:1px solid rgba(255,255,255,0.05); }
+  .win-tab { font-size:0.7rem; padding:5px 14px; color:var(--muted); border-right:1px solid rgba(255,255,255,0.04); cursor:default; }
+  .win-tab.active { color:var(--text); background:rgba(79,142,247,0.07); border-bottom:2px solid var(--accent); }
+  .lp-win-code { padding:20px; font-family:'Fira Code','Cascadia Code','Menlo',monospace; font-size:0.8rem; line-height:1.75; min-height:260px; color:#e2e8f0; white-space:pre; overflow:hidden; text-align:left; }
+  .lp-cursor { display:inline-block; width:2px; height:0.95em; background:var(--accent); vertical-align:text-bottom; animation:blink .75s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Returning users */
+  .lp-returning { width:100%; max-width:400px; display:none; }
+  .lp-returning-box { background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.18); border-radius:12px; padding:14px 18px; text-align:center; }
+  .lp-returning-box h3 { font-size:0.72rem; font-weight:700; color:var(--green); margin-bottom:10px; text-transform:uppercase; letter-spacing:.07em; }
+
+  /* Form */
+  .lp-form-card { width:100%; max-width:400px; background:rgba(26,29,39,0.8); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:24px; display:flex; flex-direction:column; gap:12px; }
+  .lp-form-label { font-size:0.8rem; color:var(--muted); font-weight:500; text-align:left; }
+  .lp-cta-divider { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:0.75rem; }
+  .lp-cta-divider::before,.lp-cta-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* Floating particles */
+  .lp-particle { position:fixed; pointer-events:none; z-index:0; font-family:'Fira Code',monospace; color:rgba(79,142,247,0.2); animation:particleRise linear infinite; white-space:nowrap; }
+  @keyframes particleRise {
+    0%  { transform:translateY(105vh); opacity:0; }
+    8%  { opacity:1; }
+    92% { opacity:0.4; }
+    100%{ transform:translateY(-60px); opacity:0; }
+  }
+
+  /* iPhone safe areas + touch targets */
+  @media (max-width:430px) {
+    .lp-center { padding:56px 16px calc(40px + env(safe-area-inset-bottom)); gap:22px; }
+    .lp-win-code { font-size:0.72rem; min-height:200px; padding:14px 16px; }
+    .lp-form-card { padding:18px; }
+    .btn { min-height:44px; }
+    input[type=text] { min-height:44px; font-size:16px !important; }
+  }
+
+  /* MAIN APP */
+  #app-screen { flex-direction: row; }
+  .sidebar { width: 260px; min-width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; }
+  .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-user { font-size: 0.8rem; color: var(--muted); }
+  .sidebar-username { font-size: 1rem; font-weight: 700; color: var(--accent); }
+  .sidebar-progress { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width .4s; }
+  .module-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+  .module-item { padding: 10px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background .15s; border-left: 3px solid transparent; }
+  .module-item:hover { background: var(--surface2); }
+  .module-item.active { background: var(--surface2); border-left-color: var(--accent); }
+  .module-item.completed { border-left-color: var(--green); }
+  .module-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+  .module-item.active .module-dot { background: var(--accent); color: #fff; }
+  .module-item.completed .module-dot { background: var(--green); color: #fff; }
+  .module-label { font-size: 0.82rem; line-height: 1.3; }
+  .module-phase { padding: 6px 20px 2px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .switch-user-btn { font-size: 0.8rem; color: var(--muted); background: none; border: none; cursor: pointer; }
+  .switch-user-btn:hover { color: var(--text); }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+  .content-inner { max-width: 820px; margin: 0 auto; padding: 40px 32px; width: 100%; }
+  .module-header { margin-bottom: 32px; }
+  .phase-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
+  .phase-1 { background: rgba(79,142,247,.15); color: var(--accent); }
+  .phase-2 { background: rgba(34,197,94,.15); color: var(--green); }
+  .phase-3 { background: rgba(124,58,237,.15); color: #a78bfa; }
+  .phase-4 { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .module-title { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+  .module-subtitle { color: var(--muted); font-size: 1rem; }
+
+  /* STEPS */
+  .step { margin-bottom: 32px; }
+  .step-tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+  .step-tag.explain { background: rgba(79,142,247,.12); color: var(--accent); }
+  .step-tag.code { background: rgba(34,197,94,.12); color: var(--green); }
+  .step-tag.exercise { background: rgba(245,158,11,.12); color: var(--yellow); }
+  .step-content p { color: #cbd5e1; line-height: 1.7; margin-bottom: 10px; font-size: 0.95rem; }
+  .step-content ul, .step-content ol { padding-left: 20px; color: #cbd5e1; line-height: 1.8; font-size: 0.95rem; }
+  .step-content li { margin-bottom: 4px; }
+  code.inline { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 0.85em; color: #93c5fd; }
+  .callout { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 12px 0; font-size: 0.88rem; color: #cbd5e1; }
+  .callout.tip { border-left-color: var(--green); }
+  .callout.warn { border-left-color: var(--yellow); }
+
+  /* CODE BLOCK */
+  .code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 14px 0; }
+  .code-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .code-lang { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .08em; }
+  .copy-btn { font-size: 0.72rem; color: var(--muted); background: none; border: none; cursor: pointer; }
+  .copy-btn:hover { color: var(--text); }
+  pre { padding: 18px; overflow-x: auto; font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 0.85rem; line-height: 1.65; }
+  .kw { color: #c084fc; } .fn { color: #60a5fa; } .str { color: #86efac; } .num { color: #fbbf24; } .cm { color: #6b7280; font-style: italic; } .op { color: #f1f5f9; }
+
+  /* UI PANE MAPPING */
+  .pane-map { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .pane { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .pane-name { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+  .pane-active { border-color: var(--accent); }
+  .pane-active .pane-name { color: var(--accent); }
+  .pane-desc { font-size: 0.82rem; color: #94a3b8; line-height: 1.4; }
+
+  /* EXERCISE */
+  .exercise-box { background: var(--surface); border: 1px solid var(--yellow); border-radius: 12px; padding: 24px; margin-top: 8px; }
+  .exercise-box h4 { font-size: 1rem; font-weight: 700; color: var(--yellow); margin-bottom: 10px; }
+  .exercise-box p { color: #cbd5e1; font-size: 0.93rem; line-height: 1.6; margin-bottom: 14px; }
+  .exercise-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .option-btn { padding: 11px 18px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-align: left; cursor: pointer; font-size: 0.9rem; transition: all .2s; }
+  .option-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .option-btn.correct { background: rgba(34,197,94,.12); border-color: var(--green); color: var(--green); }
+  .option-btn.wrong { background: rgba(239,68,68,.1); border-color: var(--red); color: var(--red); }
+  .option-btn:disabled { cursor: default; }
+  .feedback { display: none; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; line-height: 1.5; }
+  .feedback.show { display: block; }
+  .feedback.correct-fb { background: rgba(34,197,94,.1); border: 1px solid var(--green); color: #86efac; }
+  .feedback.wrong-fb { background: rgba(239,68,68,.08); border: 1px solid var(--red); color: #fca5a5; }
+  .code-exercise { width: 100%; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; color: var(--text); font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 0.87rem; resize: vertical; min-height: 80px; outline: none; margin-bottom: 12px; }
+  .code-exercise:focus { border-color: var(--accent); }
+  .exercise-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .hint-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; color: var(--muted); font-size: 0.82rem; cursor: pointer; }
+  .hint-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+  .hint-text { display: none; color: var(--yellow); font-size: 0.85rem; margin-top: 8px; font-style: italic; }
+  .hint-text.show { display: block; }
+
+  /* MODULE NAV FOOTER */
+  .module-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 0 0; border-top: 1px solid var(--border); margin-top: 32px; }
+  .nav-btn { display: flex; align-items: center; gap: 8px; }
+
+  /* WELCOME */
+  .welcome-hero { background: linear-gradient(135deg, rgba(79,142,247,.12), rgba(124,58,237,.12)); border: 1px solid var(--border); border-radius: 16px; padding: 36px; margin-bottom: 32px; text-align: center; }
+  .welcome-hero h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .welcome-hero p { color: var(--muted); line-height: 1.6; max-width: 520px; margin: 0 auto 20px; }
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; }
+  .module-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; cursor: pointer; transition: all .2s; }
+  .module-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .module-card.done { border-color: var(--green); }
+  .mc-num { font-size: 0.7rem; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .mc-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+  .mc-status { font-size: 0.75rem; color: var(--muted); }
+  .mc-status.done { color: var(--green); }
+
+  /* ── EXAM PRACTICE ── */
+  .sidebar-section-divider { margin: 10px 16px; border: none; border-top: 1px solid var(--border); }
+  .exam-section-label { padding: 8px 20px 2px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #f59e0b; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+  .module-item.exam-item .module-dot { background: rgba(245,158,11,.15); color: var(--yellow); font-size: 0.75rem; }
+  .module-item.exam-item.active .module-dot { background: var(--yellow); color: #000; }
+  .module-item.exam-item.completed .module-dot { background: var(--green); color: #fff; }
+  .q-block { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+  .q-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .q-number { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--yellow); }
+  .q-title { font-size: 1.05rem; font-weight: 700; margin-top: 4px; }
+  .q-module-tag { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+  .qmt-1 { background: rgba(79,142,247,.12); color: var(--accent); }
+  .qmt-2 { background: rgba(34,197,94,.12); color: var(--green); }
+  .qmt-3 { background: rgba(124,58,237,.12); color: #a78bfa; }
+  .concept-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .concept-chip { font-size: 0.72rem; padding: 3px 10px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: 'Fira Code', monospace; }
+  .q-text { color: #cbd5e1; font-size: 0.9rem; line-height: 1.65; margin-bottom: 14px; }
+  .reveal-btn { background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 8px 18px; color: var(--muted); font-size: 0.82rem; cursor: pointer; width: 100%; margin-top: 8px; transition: all .2s; }
+  .reveal-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+  .reveal-content { display: none; margin-top: 12px; }
+  .reveal-content.open { display: block; }
+  .insight-box { background: rgba(79,142,247,.06); border: 1px solid rgba(79,142,247,.2); border-radius: 8px; padding: 12px 16px; margin-top: 10px; font-size: 0.85rem; color: #93c5fd; line-height: 1.55; }
+  .insight-box strong { color: var(--accent); }
+
+  /* ── MOBILE HEADER (hidden on desktop) ── */
+  .mobile-header { display: none; }
+
+  /* ── SIDEBAR OVERLAY (mobile only) ── */
+  .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 199; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+  .mobile-overlay.show { display: block; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 680px) {
+    /* Sidebar becomes a slide-in drawer */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 200; min-width: 0; width: 78vw; max-width: 300px;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: none;
+    }
+    .sidebar.mobile-open {
+      transform: translateX(0);
+      box-shadow: 6px 0 40px rgba(0,0,0,0.7);
+    }
+
+    /* Sticky top bar with hamburger */
+    .mobile-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .mobile-menu-btn {
+      background: none; border: none; color: var(--text); cursor: pointer;
+      font-size: 1.3rem; padding: 4px 6px; flex-shrink: 0; line-height: 1;
+    }
+    .mobile-module-title {
+      font-size: 0.88rem; font-weight: 600; color: var(--text);
+      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Content takes full width */
+    .content-inner { padding: 20px 16px; }
+    .module-title { font-size: 1.5rem; }
+    pre { font-size: 0.76rem; }
+    .pane-map { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LANDING / LOGIN SCREEN -->
+<div id="login-screen" class="screen active">
+
+  <!-- Animated blobs -->
+  <div class="lp-blobs">
+    <div class="lp-blob b1"></div>
+    <div class="lp-blob b2"></div>
+    <div class="lp-blob b3"></div>
+    <div class="lp-blob b4"></div>
+  </div>
+
+  <!-- Centered content -->
+  <div class="lp-center">
+
+    <!-- Title + tagline -->
+    <div>
+      <div class="lp-big-title">R 4 Dummies</div>
+      <div class="lp-tagline">just like Python but better</div>
+    </div>
+
+    <!-- Live code window -->
+    <div class="lp-code-win">
+      <div class="lp-win-bar">
+        <span class="win-dot r"></span>
+        <span class="win-dot y"></span>
+        <span class="win-dot g"></span>
+        <span class="win-title">r_session.R — RStudio</span>
+      </div>
+      <div class="lp-win-tabs">
+        <div class="win-tab active">r_session.R</div>
+        <div class="win-tab">Console</div>
+        <div class="win-tab">Plots</div>
+      </div>
+      <div class="lp-win-code" id="live-code-display"><span class="lp-cursor"></span></div>
+    </div>
+
+    <!-- Returning users -->
+    <div class="lp-returning" id="lp-returning-section">
+      <div class="lp-returning-box">
+        <h3>Welcome back</h3>
+        <div class="existing-users" id="existing-users-list"></div>
+      </div>
+    </div>
+
+    <!-- Name form -->
+    <div class="lp-form-card">
+      <div class="lp-form-label">What's your name?</div>
+      <input type="text" id="name-input" placeholder="Your name..." autocomplete="off" style="font-size:16px" />
+      <button class="btn btn-primary" style="width:100%; padding:13px;" onclick="startSession()">Start →</button>
+      <div id="existing-users-section" style="display:none">
+        <div class="lp-cta-divider">or continue as</div>
+        <div class="existing-users" id="existing-users-list-cta"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" class="screen">
+
+  <!-- Mobile sidebar backdrop -->
+  <div class="mobile-overlay" id="mobile-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-user">Learning as</div>
+      <div class="sidebar-username" id="sidebar-name">—</div>
+      <div class="sidebar-progress" id="sidebar-progress">0 of 9 modules complete</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="module-nav" id="module-nav"></div>
+    <div class="sidebar-footer">
+      <button class="switch-user-btn" onclick="switchUser()">Switch user</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Mobile sticky header -->
+    <div class="mobile-header">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
+      <span class="mobile-module-title" id="mobile-module-title">R 4 Dummies</span>
+    </div>
+    <div class="content-inner" id="content-area"></div>
+  </div>
+</div>
+
+<script>
+// ── DATA LAYER ──────────────────────────────────────────────────────────────
+const STORE_KEY = 'rfd_users_v1';
+
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+}
+function saveAll(data) { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+
+function getUser(name) {
+  const all = loadAll();
+  return all[name] || { name, currentModule: 0, completed: [], scores: {} };
+}
+function saveUser(user) {
+  const all = loadAll();
+  all[user.name] = user;
+  saveAll(all);
+}
+function listUsers() { return Object.keys(loadAll()); }
+
+// ── SESSION ──────────────────────────────────────────────────────────────────
+let currentUser = null;
+let currentModuleIdx = 0;
+
+function startSession(name) {
+  name = name || document.getElementById('name-input').value.trim();
+  if (!name) return;
+  currentUser = getUser(name);
+  currentModuleIdx = currentUser.currentModule || 0;
+  show('app-screen');
+  renderSidebar();
+  renderModule(currentModuleIdx);
+  const mh = document.getElementById('mobile-module-title');
+  if (mh) mh.textContent = MODULE_META[currentModuleIdx].title;
+}
+
+function switchUser() {
+  show('login-screen');
+  document.getElementById('name-input').value = '';
+  loadExistingUsers();
+}
+
+function toggleSidebar() {
+  document.getElementById('app-sidebar').classList.toggle('mobile-open');
+  document.getElementById('mobile-overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('app-sidebar').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').classList.remove('show');
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── LOGIN UI ──────────────────────────────────────────────────────────────────
+document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') startSession(); });
+
+function loadExistingUsers() {
+  const users = listUsers();
+
+  // CTA section chips (below name input)
+  const ctaSec = document.getElementById('existing-users-section');
+  const ctaList = document.getElementById('existing-users-list-cta');
+  if (ctaSec && ctaList) {
+    if (users.length > 0) {
+      ctaSec.style.display = 'block';
+      ctaList.innerHTML = users.map(u => `<span class="user-chip" onclick="startSession('${u}')">${u}</span>`).join('');
+    } else {
+      ctaSec.style.display = 'none';
+    }
+  }
+
+  // Returning users hero section (shown at top if users exist)
+  const returningSec = document.getElementById('lp-returning-section');
+  const returningList = document.getElementById('existing-users-list');
+  if (returningSec && returningList) {
+    if (users.length > 0) {
+      returningSec.style.display = 'block';
+      returningList.innerHTML = users.map(u => {
+        const userData = getUser(u);
+        const done = userData.completed ? userData.completed.length : 0;
+        return `<span class="user-chip" onclick="startSession('${u}')" title="${done}/9 modules complete">${u} ${done > 0 ? '·&nbsp;'+done+'/9' : ''}</span>`;
+      }).join('');
+    } else {
+      returningSec.style.display = 'none';
+    }
+  }
+}
+loadExistingUsers();
+
+// ── FLOATING PARTICLES ────────────────────────────────────────────────────────
+(function() {
+  const symbols = ['<-','|>','%>%','c()','dplyr','ggplot','filter()','mutate()','summarise()','tibble','lm()','data.frame','TRUE','FALSE','NA','NULL','%in%','seq()','rep()','library()'];
+  const colors = ['rgba(79,142,247,0.18)','rgba(124,58,237,0.18)','rgba(34,197,94,0.15)','rgba(245,158,11,0.15)'];
+  function spawnParticle() {
+    const el = document.createElement('span');
+    el.className = 'lp-particle';
+    el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    el.style.left = (Math.random() * 100) + 'vw';
+    el.style.fontSize = (0.65 + Math.random() * 0.45) + 'rem';
+    el.style.color = colors[Math.floor(Math.random() * colors.length)];
+    const dur = 10 + Math.random() * 14;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay = (Math.random() * -dur) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), (dur + 2) * 1000);
+  }
+  for (let i = 0; i < 14; i++) spawnParticle();
+  setInterval(spawnParticle, 1400);
+})();
+
+// ── LIVE CODE TYPEWRITER ──────────────────────────────────────────────────────
+(function() {
+  const snippets = [
+    `# Celsius → Fahrenheit\ntemps <- c(24, 25, 27)\nresult <- temps * 9/5 + 32\nresult\n# [1] 75.2 77.0 80.6`,
+    `# Weighted average\ngrades <- c(90, 85, 88, 92)\npoints <- c(3, 4, 2, 3)\nsum(grades * points) / sum(points)\n# [1] 88.5`,
+    `# dplyr pipeline\nlibrary(dplyr)\nstarwars %>%\n  filter(species == "Human") %>%\n  group_by(gender) %>%\n  summarise(\n    n      = n(),\n    avg_ht = mean(height, na.rm = TRUE)\n  )`,
+    `# ggplot2 scatter\nlibrary(ggplot2)\nggplot(mtcars, aes(wt, mpg,\n       color = factor(cyl))) +\n  geom_point(size = 3) +\n  geom_smooth(method = "lm") +\n  theme_minimal()`,
+    `# Missing values\ncolSums(is.na(dat))\nmean(dat$salary, na.rm = TRUE)\ndat_clean <- dat[complete.cases(dat), ]`,
+    `# Scoring system\ndat$score <- 0\ndat$score <- dat$score +\n  ifelse(dat$garage_area >= 500, 2, 0)\ndat$score <- dat$score +\n  ifelse(!is.na(dat$fence), 1, 0)\nsum(dat$score == max(dat$score))`,
+  ];
+
+  function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function colorize(text) {
+    return text.split('\n').map(line => {
+      if (line.trimStart().startsWith('#')) return `<span style="color:#6b7280;font-style:italic">${esc(line)}</span>`;
+      let r = esc(line);
+      r = r.replace(/(&quot;|&#39;)(.*?)\1/g, '<span style="color:#86efac">$&</span>');
+      r = r.replace(/"([^"]*)"/g, '<span style="color:#86efac">"$1"</span>');
+      r = r.replace(/\b(TRUE|FALSE|NA|NULL|if|else|function|return|library)\b/g, '<span style="color:#c084fc">$1</span>');
+      r = r.replace(/\b([a-zA-Z_][a-zA-Z0-9_.]*)\s*(?=\()/g, '<span style="color:#60a5fa">$1</span>');
+      r = r.replace(/(%&gt;%|\|&gt;|&lt;-)/g, '<span style="color:#94a3b8">$1</span>');
+      r = r.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#fbbf24">$1</span>');
+      return r;
+    }).join('\n');
+  }
+
+  let si = 0, ci = 0, erasing = false;
+  const el = document.getElementById('live-code-display');
+  if (!el) return;
+
+  function tick() {
+    const s = snippets[si];
+    if (!erasing) {
+      ci++;
+      el.innerHTML = colorize(s.slice(0, ci)) + '<span class="lp-cursor"></span>';
+      if (ci >= s.length) { setTimeout(() => { erasing = true; tick(); }, 2600); return; }
+      setTimeout(tick, s[ci-1] === '\n' ? 70 : 22);
+    } else {
+      ci = Math.max(0, ci - 4);
+      el.innerHTML = colorize(s.slice(0, ci)) + '<span class="lp-cursor"></span>';
+      if (ci <= 0) { erasing = false; si = (si + 1) % snippets.length; setTimeout(tick, 350); return; }
+      setTimeout(tick, 10);
+    }
+  }
+  setTimeout(tick, 600);
+})();
+
+// ── MODULES META ─────────────────────────────────────────────────────────────
+const PHASES = [
+  { label: 'Phase 1 — Foundations', modules: [0,1,2] },
+  { label: 'Phase 2 — Data Intelligence', modules: [3,4] },
+  { label: 'Phase 3 — Data Wrangling', modules: [5,6] },
+  { label: 'Phase 4 — Visualization', modules: [7,8] },
+];
+const MODULE_META = [
+  { num:1, title:'Variables & Data Types', phase:1 },
+  { num:2, title:'Vectors', phase:1 },
+  { num:3, title:'Data Frames', phase:1 },
+  { num:4, title:'EDA & Descriptive Stats', phase:2 },
+  { num:5, title:'Packages & Tidyverse', phase:2 },
+  { num:6, title:'Core dplyr', phase:3 },
+  { num:7, title:'Advanced dplyr', phase:3 },
+  { num:8, title:'ggplot2 Fundamentals', phase:4 },
+  { num:9, title:'Advanced ggplot2', phase:4 },
+  // Exam practice (phase 5 = special)
+  { num:'H1', title:'Assignment 1: Vectors & Math', phase:5, exam:true },
+  { num:'H2', title:'Assignment 2: Ames Housing', phase:5, exam:true },
+];
+
+function renderSidebar() {
+  document.getElementById('sidebar-name').textContent = currentUser.name;
+  const coreDone = currentUser.completed.filter(i => i < 9).length;
+  document.getElementById('sidebar-progress').textContent = `${coreDone} of 9 modules complete`;
+  document.getElementById('progress-fill').style.width = `${Math.round(coreDone/9*100)}%`;
+
+  const nav = document.getElementById('module-nav');
+  let html = '';
+  let lastPhase = 0;
+  let examStarted = false;
+  MODULE_META.forEach((m, i) => {
+    if (m.phase === 5 && !examStarted) {
+      examStarted = true;
+      html += `<hr class="sidebar-section-divider">
+               <div class="exam-section-label">Practice through Assignments</div>`;
+    } else if (m.phase !== lastPhase && m.phase !== 5) {
+      const pl = ['','Phase 1 — Foundations','Phase 2 — Intelligence','Phase 3 — Wrangling','Phase 4 — Visualization'][m.phase];
+      html += `<div class="module-phase">${pl}</div>`;
+    }
+    lastPhase = m.phase;
+    const isActive = i === currentModuleIdx;
+    const isDone = currentUser.completed.includes(i);
+    html += `<div class="module-item ${isActive?'active':''} ${isDone?'completed':''} ${m.exam?'exam-item':''}" onclick="goModule(${i})">
+      <div class="module-dot">${isDone ? '✓' : m.num}</div>
+      <div class="module-label">${m.title}</div>
+    </div>`;
+  });
+  nav.innerHTML = html;
+}
+
+function goModule(idx) {
+  currentModuleIdx = idx;
+  currentUser.currentModule = idx;
+  saveUser(currentUser);
+  renderSidebar();
+  renderModule(idx);
+  document.querySelector('.content').scrollTop = 0;
+  closeSidebar(); // auto-close on mobile
+  // Update mobile header title
+  const mh = document.getElementById('mobile-module-title');
+  if (mh) mh.textContent = MODULE_META[idx].title;
+}
+
+function markDone(idx) {
+  if (!currentUser.completed.includes(idx)) {
+    currentUser.completed.push(idx);
+    saveUser(currentUser);
+  }
+  renderSidebar();
+}
+
+// ── CONTENT RENDERER ─────────────────────────────────────────────────────────
+function renderModule(idx) {
+  const area = document.getElementById('content-area');
+  area.innerHTML = MODULES[idx] ? MODULES[idx]() : `<p style="color:var(--muted)">Module ${idx+1} coming soon.</p>`;
+}
+
+function codeBlock(lang, code) {
+  return `<div class="code-block">
+    <div class="code-header"><span class="code-lang">${lang}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>${code}</pre>
+  </div>`;
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+function paneMap(active, description) {
+  const panes = ['Source Editor','Console','Environment','Plots/Files/Help'];
+  return `<div class="pane-map">${panes.map(p =>
+    `<div class="pane ${p===active?'pane-active':''}">
+      <div class="pane-name">${p}</div>
+      <div class="pane-desc">${p===active ? description : 'Not primary for this step'}</div>
+    </div>`
+  ).join('')}</div>`;
+}
+
+function mcExercise(id, question, options, correctIdx, explanation, hint='') {
+  const saved = currentUser.scores[id];
+  const optHtml = options.map((o, i) => {
+    let cls = '';
+    if (saved !== undefined) { cls = i === correctIdx ? 'correct' : (i === saved && saved !== correctIdx ? 'wrong' : ''); }
+    return `<button class="option-btn ${cls}" id="${id}_opt${i}" onclick="checkMC('${id}',${i},${correctIdx},'${encodeURIComponent(explanation)}')" ${saved!==undefined?'disabled':''}>${o}</button>`;
+  }).join('');
+  const fbShow = saved !== undefined ? 'show' : '';
+  const fbClass = saved === correctIdx ? 'correct-fb' : (saved !== undefined ? 'wrong-fb' : '');
+  const fbText = saved !== undefined ? decodeURIComponent(explanation) : '';
+  return `<div class="exercise-box">
+    <h4>Your Turn</h4>
+    <p>${question}</p>
+    <div class="exercise-options">${optHtml}</div>
+    ${hint ? `<button class="hint-btn" onclick="toggleHint('${id}_hint')">Show hint</button>
+    <div class="hint-text" id="${id}_hint">${hint}</div>` : ''}
+    <div class="feedback ${fbClass} ${fbShow}" id="${id}_fb">${fbText}</div>
+  </div>`;
+}
+
+function checkMC(id, chosen, correct, explanation) {
+  currentUser.scores[id] = chosen;
+  saveUser(currentUser);
+  document.querySelectorAll(`[id^="${id}_opt"]`).forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === correct) btn.classList.add('correct');
+    else if (i === chosen) btn.classList.add('wrong');
+  });
+  const fb = document.getElementById(`${id}_fb`);
+  fb.textContent = decodeURIComponent(explanation);
+  fb.classList.add('show', chosen === correct ? 'correct-fb' : 'wrong-fb');
+  if (chosen === correct) markDone(currentModuleIdx);
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+
+function navFooter(idx) {
+  const prev = idx > 0 ? `<button class="btn btn-secondary nav-btn" onclick="goModule(${idx-1})">← ${MODULE_META[idx-1].title}</button>` : '<span></span>';
+  const next = idx < 8 ? `<button class="btn btn-primary nav-btn" onclick="goModule(${idx+1})">Next: ${MODULE_META[idx+1].title} →</button>` : `<span style="color:var(--green); font-weight:700;">All modules complete</span>`;
+  return `<div class="module-footer">${prev}${next}</div>`;
+}
+
+// ── MODULES CONTENT ──────────────────────────────────────────────────────────
+const MODULES = [];
+
+// MODULE 1 — Variables & Data Types
+MODULES[0] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-1">Phase 1 · Module 1</div>
+  <div class="module-title">Variables &amp; Data Types</div>
+  <div class="module-subtitle">The absolute foundation — storing values, naming them, and knowing what type they are.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">Explanation</div>
+  <div class="step-content">
+    <p>In R, a <strong>variable</strong> is a named storage container. You create one using the <code class="inline">&lt;-</code> assignment operator (preferred) or <code class="inline">=</code>. The arrow points <em>from value to name</em>.</p>
+    ${codeBlock('R', `<cm># Create variables</cm>
+name <op>&lt;-</op> <str>"Alice"</str>        <cm># character (text)</cm>
+age  <op>&lt;-</op> <num>25</num>            <cm># numeric</cm>
+is_student <op>&lt;-</op> <kw>TRUE</kw>    <cm># logical (TRUE / FALSE)</cm>
+score <op>&lt;-</op> <num>88L</num>          <cm># integer (L suffix)</cm>`)}
+    <p>R has 6 basic data types. The ones you'll use most:</p>
+    <ul>
+      <li><code class="inline">numeric</code> — any number: <code class="inline">3.14</code>, <code class="inline">100</code></li>
+      <li><code class="inline">character</code> — text in quotes: <code class="inline">"hello"</code></li>
+      <li><code class="inline">logical</code> — <code class="inline">TRUE</code> or <code class="inline">FALSE</code> (caps matter!)</li>
+      <li><code class="inline">integer</code> — whole numbers with <code class="inline">L</code>: <code class="inline">5L</code></li>
+      <li><code class="inline">NA</code> — missing value (extremely important in real data)</li>
+    </ul>
+    <div class="callout"> Use <code class="inline">class(x)</code> to check a variable's type. Use <code class="inline">is.na(x)</code> to check for missing values.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag code">Code + RStudio UI Mapping</div>
+  <div class="step-content">
+    <p>Type this code in the <strong>Source Editor</strong> and run it line by line (Cmd/Ctrl + Enter):</p>
+    ${codeBlock('R', `name <op>&lt;-</op> <str>"Alice"</str>
+age  <op>&lt;-</op> <num>25</num>
+is_student <op>&lt;-</op> <kw>TRUE</kw>
+
+<fn>class</fn>(name)        <cm># "character"</cm>
+<fn>class</fn>(age)         <cm># "numeric"</cm>
+<fn>class</fn>(is_student)  <cm># "logical"</cm>
+
+missing_val <op>&lt;-</op> <kw>NA</kw>
+<fn>is.na</fn>(missing_val) <cm># TRUE</cm>`)}
+    <p>After running, watch what appears in each RStudio pane:</p>
+    ${paneMap('Environment', 'Variables appear here: name, age, is_student, missing_val — with their types and values shown.')}
+    <div class="callout tip"> The Console pane shows the output of <code class="inline">class()</code> calls — e.g. <code class="inline">[1] "character"</code></div>
+    <p><strong>Type coercion</strong> — R can convert between types:</p>
+    ${codeBlock('R', `<fn>as.numeric</fn>(<str>"42"</str>)    <cm># 42</cm>
+<fn>as.character</fn>(<num>99</num>)  <cm># "99"</cm>
+<fn>as.logical</fn>(<num>0</num>)    <cm># FALSE (0 = FALSE, anything else = TRUE)</cm>`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm1q1',
+    'You run <code class="inline">x &lt;- 42L</code> then <code class="inline">class(x)</code>. What does R print in the Console?',
+    ['"numeric"', '"integer"', '"double"', '"character"'],
+    1,
+    '✅ Correct! The L suffix forces integer type. Without it, R defaults to numeric (double). class(42L) → "integer". This distinction matters in memory-sensitive operations.',
+    'The L suffix is the key. Without it, R treats all numbers as numeric (double).'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm1q2',
+    'Which of these will cause an error or produce NA with a warning?',
+    ['as.numeric("3.14")', 'as.numeric(TRUE)', 'as.numeric("hello")', 'as.character(100)'],
+    2,
+    '✅ Correct! "hello" cannot be converted to a number — R returns NA and prints a warning: "NAs introduced by coercion". The others all convert cleanly (TRUE → 1, "3.14" → 3.14, 100 → "100").',
+    'Think about what "hello" would mean as a number...'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exam-Style Challenge</div>
+  <div class="exercise-box">
+    <h4>✏️ Write It Yourself</h4>
+    <p>Create 3 variables in R: <code class="inline">student_name</code> (your name as a string), <code class="inline">grade</code> (a number between 0–100), and <code class="inline">passed</code> (TRUE if grade ≥ 50). Then check the class of each one. Type your R code below:</p>
+    <textarea class="code-exercise" id="m1_free" placeholder="student_name <- ...&#10;grade <- ...&#10;passed <- ...&#10;class(student_name)&#10;..."></textarea>
+    <div class="exercise-actions">
+      <button class="btn btn-primary" onclick="checkFree('m1_free','m1_free_fb')">Check My Answer</button>
+      <button class="hint-btn" onclick="toggleHint('m1_free_hint')">💡 Hint</button>
+    </div>
+    <div class="hint-text" id="m1_free_hint">student_name &lt;- "Maya" · grade &lt;- 85 · passed &lt;- grade >= 50</div>
+    <div class="feedback" id="m1_free_fb"></div>
+  </div>
+</div>
+
+${navFooter(0)}`;
+
+// MODULE 2 — Vectors
+MODULES[1] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-1">Phase 1 · Module 2</div>
+  <div class="module-title">Vectors</div>
+  <div class="module-subtitle">R's core data structure — everything you compute in R runs through vectors.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">Explanation</div>
+  <div class="step-content">
+    <p>A <strong>vector</strong> is an ordered collection of values of the <em>same type</em>. It's the building block of all R data. You create one with <code class="inline">c()</code> (combine).</p>
+    ${codeBlock('R', `<cm># Creating vectors</cm>
+scores  <op>&lt;-</op> <fn>c</fn>(<num>88</num>, <num>72</num>, <num>95</num>, <num>60</num>, <num>85</num>)
+names   <op>&lt;-</op> <fn>c</fn>(<str>"Alice"</str>, <str>"Bob"</str>, <str>"Carol"</str>)
+passed  <op>&lt;-</op> <fn>c</fn>(<kw>TRUE</kw>, <kw>FALSE</kw>, <kw>TRUE</kw>, <kw>FALSE</kw>, <kw>TRUE</kw>)
+
+<cm># Sequences and repetition</cm>
+one_to_ten <op>&lt;-</op> <num>1</num><op>:</op><num>10</num>                    <cm># 1 2 3 4 5 6 7 8 9 10</cm>
+evens      <op>&lt;-</op> <fn>seq</fn>(<num>2</num>, <num>20</num>, by<op>=</op><num>2</num>)   <cm># 2 4 6 8 ... 20</cm>
+zeros      <op>&lt;-</op> <fn>rep</fn>(<num>0</num>, times<op>=</op><num>5</num>)    <cm># 0 0 0 0 0</cm>`)}
+    <p><strong>Key rule — type coercion in vectors:</strong> If you mix types, R converts everything to the most flexible type. character beats numeric beats logical.</p>
+    ${codeBlock('R', `<fn>c</fn>(<num>1</num>, <num>2</num>, <str>"three"</str>)   <cm># "1" "2" "three"  ← all become character</cm>
+<fn>c</fn>(<kw>TRUE</kw>, <num>1</num>, <num>2</num>)     <cm># 1 1 2  ← TRUE becomes 1</cm>`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Subsetting Vectors</div>
+  <div class="step-content">
+    <p>Access elements using <code class="inline">[ ]</code> with an index. <strong>R indexing starts at 1</strong> (not 0 like Python).</p>
+    ${codeBlock('R', `scores <op>&lt;-</op> <fn>c</fn>(<num>88</num>, <num>72</num>, <num>95</num>, <num>60</num>, <num>85</num>)
+
+scores[<num>1</num>]          <cm># 88  (first element)</cm>
+scores[<num>3</num>]          <cm># 95  (third element)</cm>
+scores[<fn>c</fn>(<num>1</num>,<num>3</num>)]      <cm># 88 95 (first and third)</cm>
+scores[<num>2</num><op>:</op><num>4</num>]         <cm># 72 95 60 (elements 2 through 4)</cm>
+scores[<op>-</op><num>1</num>]         <cm># 72 95 60 85 (everything EXCEPT first)</cm>
+
+<cm># Logical subsetting (very useful for filtering!)</cm>
+scores[scores <op>&gt;</op> <num>80</num>]  <cm># 88 95 85 (only values above 80)</cm>`)}
+    <div class="callout warn"> Negative index <code class="inline">scores[-1]</code> means "exclude element 1", not "count from end". This is different from Python!</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag code">💻 Vector Operations + RStudio Mapping</div>
+  <div class="step-content">
+    ${codeBlock('R', `scores <op>&lt;-</op> <fn>c</fn>(<num>88</num>, <num>72</num>, <num>95</num>, <num>60</num>, <num>85</num>)
+
+<cm># Vectorised arithmetic — applies to every element</cm>
+scores <op>+</op> <num>5</num>          <cm># 93 77 100 65 90</cm>
+scores <op>/</op> <num>100</num>        <cm># 0.88 0.72 0.95 0.60 0.85</cm>
+
+<cm># Summary functions</cm>
+<fn>length</fn>(scores)    <cm># 5</cm>
+<fn>sum</fn>(scores)       <cm># 400</cm>
+<fn>mean</fn>(scores)      <cm># 80</cm>
+<fn>max</fn>(scores)       <cm># 95</cm>
+<fn>min</fn>(scores)       <cm># 60</cm>
+<fn>sort</fn>(scores)      <cm># 60 72 85 88 95</cm>`)}
+    ${paneMap('Console', 'Outputs appear here after each command — e.g. [1] 88 72 95 60 85 for the scores vector.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm2q1',
+    'Given <code class="inline">x &lt;- c(10, 20, 30, 40, 50)</code>, what does <code class="inline">x[-c(1,3)]</code> return?',
+    ['10 30', '20 40 50', '10 20 30 40 50', 'Error'],
+    1,
+    '✅ Correct! Negative indexing removes the specified positions. -c(1,3) removes the 1st (10) and 3rd (30) elements, leaving 20, 40, 50.',
+    'Negative index = exclude those positions. c(1,3) means positions 1 and 3.'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm2q2',
+    'You have <code class="inline">grades &lt;- c(55, 72, 48, 90, 61)</code>. Which code returns only grades that are passing (≥ 50)?',
+    ['grades[grades = 50]', 'grades[grades >= 50]', 'grades > 50', 'filter(grades, >= 50)'],
+    1,
+    '✅ Correct! Logical subsetting: grades >= 50 creates a logical vector (T F T T T... wait — 55≥50=T, 72≥50=T, 48≥50=F, 90≥50=T, 61≥50=T), then [] uses that to select matching elements.',
+    'Logical subsetting syntax: vector[vector condition value]'
+  )}
+</div>
+
+${navFooter(1)}`;
+
+// MODULE 3 — Data Frames
+MODULES[2] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-1">Phase 1 · Module 3</div>
+  <div class="module-title">Data Frames</div>
+  <div class="module-subtitle">R's table structure — rows are observations, columns are variables. This is your real dataset.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">Explanation</div>
+  <div class="step-content">
+    <p>A <strong>data frame</strong> is a table: each column is a vector (same type within column), each row is one observation. Unlike a matrix, columns can be different types.</p>
+    ${codeBlock('R', `<cm># Create a data frame</cm>
+students <op>&lt;-</op> <fn>data.frame</fn>(
+  name    <op>=</op> <fn>c</fn>(<str>"Alice"</str>, <str>"Bob"</str>, <str>"Carol"</str>, <str>"Dan"</str>),
+  score   <op>=</op> <fn>c</fn>(<num>88</num>, <num>72</num>, <num>95</num>, <num>60</num>),
+  passed  <op>=</op> <fn>c</fn>(<kw>TRUE</kw>, <kw>TRUE</kw>, <kw>TRUE</kw>, <kw>FALSE</kw>),
+  stringsAsFactors <op>=</op> <kw>FALSE</kw>   <cm># keep strings as character</cm>
+)`)}
+    <p>Essential inspection functions — run these on <em>any</em> new dataset:</p>
+    ${codeBlock('R', `<fn>str</fn>(students)      <cm># structure: types + first values</cm>
+<fn>head</fn>(students)     <cm># first 6 rows</cm>
+<fn>tail</fn>(students)     <cm># last 6 rows</cm>
+<fn>nrow</fn>(students)     <cm># number of rows: 4</cm>
+<fn>ncol</fn>(students)     <cm># number of columns: 3</cm>
+<fn>dim</fn>(students)      <cm># both: 4 3</cm>
+<fn>colnames</fn>(students) <cm># "name" "score" "passed"</cm>`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Indexing Data Frames</div>
+  <div class="step-content">
+    <p>Three ways to access data frame contents:</p>
+    ${codeBlock('R', `<cm># 1. Dollar sign — access column by name (most common)</cm>
+students<op>$</op>score        <cm># 88 72 95 60</cm>
+students<op>$</op>name         <cm># "Alice" "Bob" "Carol" "Dan"</cm>
+
+<cm># 2. [row, col] bracket notation</cm>
+students[<num>1</num>, ]        <cm># entire first row</cm>
+students[ , <num>2</num>]       <cm># entire second column (score)</cm>
+students[<num>2</num>, <num>1</num>]      <cm># row 2, col 1: "Bob"</cm>
+students[<num>1</num><op>:</op><num>2</num>, ]    <cm># first two rows</cm>
+
+<cm># 3. Column by name in brackets</cm>
+students[, <str>"score"</str>]  <cm># same as students$score</cm>
+
+<cm># Filter rows by condition</cm>
+students[students<op>$</op>score <op>&gt;</op> <num>80</num>, ]     <cm># rows where score > 80</cm>
+students[students<op>$</op>passed <op>==</op> <kw>FALSE</kw>, ]  <cm># failed students</cm>`)}
+    <div class="callout"> <strong>Exam tip:</strong> In <code class="inline">df[row, col]</code> — leaving row or col blank means "all". So <code class="inline">df[1, ]</code> = first row, all columns.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag code">💻 Adding & Modifying Columns</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># Add a new column</cm>
+students<op>$</op>grade_letter <op>&lt;-</op> <fn>c</fn>(<str>"B"</str>, <str>"C"</str>, <str>"A"</str>, <str>"D"</str>)
+
+<cm># Modify existing column</cm>
+students<op>$</op>score <op>&lt;-</op> students<op>$</op>score <op>+</op> <num>5</num>  <cm># add 5 bonus points</cm>
+
+<cm># Remove a column (set to NULL)</cm>
+students<op>$</op>grade_letter <op>&lt;-</op> <kw>NULL</kw>`)}
+    ${paneMap('Environment', 'Click the triangle next to "students" to expand and see all column names, types, and sample values.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm3q1',
+    'Given <code class="inline">df[df$age > 25, ]</code> — what does the comma before the closing bracket do?',
+    ['It\'s a syntax error', 'It selects all columns (returns full rows)', 'It selects the second column', 'It means "and also"'],
+    1,
+    '✅ Correct! In df[row, col], leaving col blank after the comma means "return all columns." Without the comma you would get a different result (a list, not a filtered data frame). The comma is essential for row-filtering while keeping all columns.',
+    'Remember: df[ROW_CONDITION, COLUMN_SELECTION] — blank column = all columns'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm3q2',
+    'What function shows you the types of all columns in a data frame at a glance?',
+    ['summary()', 'str()', 'head()', 'class()'],
+    1,
+    '✅ Correct! str() (structure) shows column names, their data types (chr, num, logi), and the first few values all in one output. It\'s the first thing you should run on any new dataset.',
+    'Think: which function shows the STRucture?'
+  )}
+</div>
+
+${navFooter(2)}`;
+
+// MODULE 4 — EDA
+MODULES[3] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-2">Phase 2 · Module 4</div>
+  <div class="module-title">EDA &amp; Descriptive Statistics</div>
+  <div class="module-subtitle">Understand your data before you model it. Find patterns, outliers, and missing values.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">Explanation</div>
+  <div class="step-content">
+    <p><strong>Exploratory Data Analysis (EDA)</strong> is the process of summarising and visualising data to understand its structure before any modelling. In R, the core functions are:</p>
+    ${codeBlock('R', `<cm># The single most useful EDA function</cm>
+<fn>summary</fn>(df)    <cm># Min, Q1, Median, Mean, Q3, Max for numerics
+                  # counts for factors/characters
+                  # number of NAs for any column</cm>
+
+<cm># Individual statistics</cm>
+<fn>mean</fn>(x)        <cm># arithmetic mean (sensitive to outliers)</cm>
+<fn>median</fn>(x)      <cm># middle value (robust to outliers)</cm>
+<fn>sd</fn>(x)          <cm># standard deviation</cm>
+<fn>var</fn>(x)         <cm># variance</cm>
+<fn>range</fn>(x)       <cm># min and max as vector</cm>
+<fn>quantile</fn>(x)    <cm># 0%, 25%, 50%, 75%, 100%</cm>
+<fn>table</fn>(x)       <cm># frequency table (counts per value)</cm>`)}
+    <div class="callout warn"> <strong>NA trap:</strong> If your vector has any NA values, mean(), sd() etc. return NA. Fix: <code class="inline">mean(x, na.rm = TRUE)</code></div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Detecting Missing Values</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># Detect NAs</cm>
+<fn>is.na</fn>(x)              <cm># logical vector: TRUE where NA</cm>
+<fn>sum</fn>(<fn>is.na</fn>(x))        <cm># count of NAs in vector</cm>
+<fn>colSums</fn>(<fn>is.na</fn>(df))   <cm># NA count per column in data frame</cm>
+
+<cm># Complete cases</cm>
+<fn>complete.cases</fn>(df)     <cm># logical: TRUE for rows with no NAs</cm>
+df_clean <op>&lt;-</op> df[<fn>complete.cases</fn>(df), ]  <cm># remove rows with any NA</cm>
+
+<cm># Correlation</cm>
+<fn>cor</fn>(df<op>$</op>x, df<op>$</op>y)          <cm># Pearson correlation: -1 to 1</cm>`)}
+    <p>The <code class="inline">table()</code> function is essential for categorical columns:</p>
+    ${codeBlock('R', `gender_counts <op>&lt;-</op> <fn>table</fn>(df<op>$</op>gender)
+<cm># Female   Male
+#     42     38</cm>
+
+<cm># Two-way frequency table</cm>
+<fn>table</fn>(df<op>$</op>gender, df<op>$</op>passed)`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag code">Full EDA Workflow</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># Load built-in dataset</cm>
+<fn>data</fn>(mtcars)
+
+<cm># Step 1 — Inspect structure</cm>
+<fn>str</fn>(mtcars)
+<fn>dim</fn>(mtcars)         <cm># 32 11</cm>
+
+<cm># Step 2 — Summary statistics</cm>
+<fn>summary</fn>(mtcars)
+
+<cm># Step 3 — Check for NAs</cm>
+<fn>colSums</fn>(<fn>is.na</fn>(mtcars))   <cm># all 0 for mtcars (clean dataset)</cm>
+
+<cm># Step 4 — Explore a column</cm>
+<fn>mean</fn>(mtcars<op>$</op>mpg)          <cm># 20.09</cm>
+<fn>sd</fn>(mtcars<op>$</op>mpg)            <cm># 6.03</cm>
+<fn>table</fn>(mtcars<op>$</op>cyl)         <cm># 4:11  6:7  8:14</cm>`)}
+    ${paneMap('Console', 'All summary() and table() output prints here. Use head() to preview without flooding the console.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm4q1',
+    'You run <code class="inline">mean(df$salary)</code> and get <code class="inline">NA</code>. What is the most likely cause and fix?',
+    ['The column is character type — use as.numeric(df$salary)', 'The column contains NA values — use mean(df$salary, na.rm = TRUE)', 'df$salary does not exist — check colnames(df)', 'mean() does not work on data frames'],
+    1,
+    '✅ Correct! mean() returns NA if ANY value in the vector is NA (to signal that the result may be unreliable). Adding na.rm = TRUE tells R to ignore NAs before computing. This applies to sum(), sd(), var(), median() as well.',
+    'What does NA propagation mean in R arithmetic?'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm4q2',
+    'Which function gives you the count of each unique value in a categorical column?',
+    ['summary()', 'count()', 'table()', 'freq()'],
+    2,
+    '✅ Correct! table() counts how many times each unique value appears in a vector. It\'s perfect for categorical/factor columns. summary() also does this but for factor-type columns only.',
+    'Think "frequency TABLE"'
+  )}
+</div>
+
+${navFooter(3)}`;
+
+// MODULE 5 — Packages
+MODULES[4] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-2">Phase 2 · Module 5</div>
+  <div class="module-title">Packages &amp; Tidyverse</div>
+  <div class="module-subtitle">Extend R's power — install once, load each session. Tidyverse is the modern R workflow.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">Explanation</div>
+  <div class="step-content">
+    <p>R packages are collections of functions you install from CRAN (the R package repository). The key distinction:</p>
+    <ul>
+      <li><code class="inline">install.packages("name")</code> — downloads & installs. <strong>Run once</strong> per machine.</li>
+      <li><code class="inline">library(name)</code> — loads into current session. <strong>Run every time</strong> you open R.</li>
+    </ul>
+    ${codeBlock('R', `<cm># Install (one time only)</cm>
+<fn>install.packages</fn>(<str>"tidyverse"</str>)
+<fn>install.packages</fn>(<str>"ggplot2"</str>)
+
+<cm># Load (every session)</cm>
+<fn>library</fn>(tidyverse)
+<fn>library</fn>(ggplot2)
+
+<cm># Check what's installed</cm>
+<fn>installed.packages</fn>()[, <str>"Package"</str>]`)}
+    <div class="callout"> <strong>Tidyverse</strong> is a collection of 8+ packages that share a common philosophy and syntax: ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, forcats.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 The Tidyverse Ecosystem</div>
+  <div class="step-content">
+    <p>When you run <code class="inline">library(tidyverse)</code>, you load all core tidyverse packages at once:</p>
+    <div class="pane-map" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="pane pane-active"><div class="pane-name">dplyr</div><div class="pane-desc">Data manipulation — filter, mutate, group</div></div>
+      <div class="pane pane-active"><div class="pane-name">ggplot2</div><div class="pane-desc">Data visualisation — grammar of graphics</div></div>
+      <div class="pane pane-active"><div class="pane-name">tidyr</div><div class="pane-desc">Reshape data — pivot_longer, pivot_wider</div></div>
+      <div class="pane pane-active"><div class="pane-name">readr</div><div class="pane-desc">Fast CSV import — read_csv()</div></div>
+      <div class="pane pane-active"><div class="pane-name">tibble</div><div class="pane-desc">Modern data frame with better printing</div></div>
+      <div class="pane pane-active"><div class="pane-name">stringr</div><div class="pane-desc">String operations — str_detect, str_replace</div></div>
+    </div>
+    ${codeBlock('R', `<cm># Import a CSV (readr)</cm>
+df <op>&lt;-</op> <fn>read_csv</fn>(<str>"data.csv"</str>)   <cm># tidyverse version (faster than read.csv)</cm>
+df <op>&lt;-</op> <fn>read.csv</fn>(<str>"data.csv"</str>)   <cm># base R version (also fine)</cm>`)}
+    ${paneMap('Console', 'When you library(tidyverse), the console prints which packages were loaded and their versions. That output is normal — not an error.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm5q1',
+    'A classmate runs <code class="inline">library(dplyr)</code> and gets: <em>"Error: there is no package called dplyr"</em>. What must they do first?',
+    ['Run: require(dplyr)', 'Run: install.packages("dplyr")', 'Restart RStudio', 'Run: load("dplyr")'],
+    1,
+    '✅ Correct! library() can only load packages that are already installed. install.packages("dplyr") downloads and installs it from CRAN. After that, library(dplyr) will work. This is one of the most common beginner errors.',
+    'install → library: install once, load every time'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm5q2',
+    'Which statement about <code class="inline">library(tidyverse)</code> is TRUE?',
+    ['It only loads ggplot2', 'It loads dplyr, ggplot2, and several other packages at once', 'It installs tidyverse if not present', 'You must call library() once per function you use'],
+    1,
+    '✅ Correct! loading tidyverse with library(tidyverse) loads the entire core tidyverse collection in one call: ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, and forcats.',
+    'tidyverse is a meta-package — it bundles many packages'
+  )}
+</div>
+
+${navFooter(4)}`;
+
+// MODULE 6 — Core dplyr
+MODULES[5] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-3">Phase 3 · Module 6</div>
+  <div class="module-title">Core dplyr</div>
+  <div class="module-subtitle">The 6 verbs that handle 90% of data wrangling — filter, select, mutate, arrange, summarise, group_by.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 The Pipe Operator</div>
+  <div class="step-content">
+    <p>Before the verbs — the pipe <code class="inline">%>%</code> (from magrittr, loaded with dplyr) passes output of one function as the first argument of the next. It reads left-to-right like English.</p>
+    ${codeBlock('R', `<fn>library</fn>(dplyr)
+
+<cm># Without pipe (nested, hard to read)</cm>
+<fn>arrange</fn>(<fn>filter</fn>(df, score <op>&gt;</op> <num>80</num>), score)
+
+<cm># With pipe (reads left to right)</cm>
+df <op>%&gt;%</op>
+  <fn>filter</fn>(score <op>&gt;</op> <num>80</num>) <op>%&gt;%</op>
+  <fn>arrange</fn>(score)`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 The 6 Core Verbs</div>
+  <div class="step-content">
+    ${codeBlock('R', `<fn>library</fn>(dplyr)
+<fn>data</fn>(starwars)   <cm># built-in dataset</cm>
+
+<cm># 1. filter() — keep rows matching condition</cm>
+<fn>filter</fn>(starwars, species <op>==</op> <str>"Human"</str>)
+<fn>filter</fn>(starwars, height <op>&gt;</op> <num>180</num>, mass <op>&lt;</op> <num>100</num>)  <cm># multiple conditions (AND)</cm>
+
+<cm># 2. select() — keep/drop columns</cm>
+<fn>select</fn>(starwars, name, height, mass)
+<fn>select</fn>(starwars, <op>-</op>films, <op>-</op>vehicles)   <cm># drop columns</cm>
+
+<cm># 3. mutate() — add or modify columns</cm>
+starwars <op>%&gt;%</op> <fn>mutate</fn>(bmi <op>=</op> mass <op>/</op> (height<op>/</op><num>100</num>)<op>^</op><num>2</num>)
+
+<cm># 4. arrange() — sort rows</cm>
+<fn>arrange</fn>(starwars, height)           <cm># ascending</cm>
+<fn>arrange</fn>(starwars, <fn>desc</fn>(height))     <cm># descending</cm>
+
+<cm># 5. summarise() — collapse to one row per group</cm>
+starwars <op>%&gt;%</op> <fn>summarise</fn>(avg_height <op>=</op> <fn>mean</fn>(height, na.rm<op>=</op><kw>TRUE</kw>))
+
+<cm># 6. group_by() + summarise() — aggregate by group</cm>
+starwars <op>%&gt;%</op>
+  <fn>group_by</fn>(species) <op>%&gt;%</op>
+  <fn>summarise</fn>(
+    count      <op>=</op> <fn>n</fn>(),
+    avg_height <op>=</op> <fn>mean</fn>(height, na.rm<op>=</op><kw>TRUE</kw>)
+  )`)}
+    ${paneMap('Console', 'dplyr verbs print a tibble result here. Notice the column types shown in grey under column names — that is a tibble feature.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm6q1',
+    'You want rows where <code class="inline">age</code> is between 18 and 30 (inclusive). Which filter call is correct?',
+    ['filter(df, age > 18 & age < 30)', 'filter(df, age >= 18 & age <= 30)', 'filter(df, 18 < age < 30)', 'filter(df, age == 18:30)'],
+    1,
+    '✅ Correct! Use >= and <= for inclusive bounds, combined with & for AND. Option C is Python syntax and will not work in R. Option D creates a vector comparison that doesn\'t behave as expected.',
+    'Inclusive = >= and <=, combined with &'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">✏️ Exercise 2 — Pipe Chain</div>
+  ${mcExercise(
+    'm6q2',
+    'What does this code return?<br><code class="inline">starwars %>% filter(gender == "masculine") %>% summarise(n = n())</code>',
+    ['All masculine characters as a full table', 'A 1-row tibble with the count of masculine characters', 'An error — n() needs group_by first', 'The names of masculine characters'],
+    1,
+    '✅ Correct! summarise() without group_by collapses the entire (already-filtered) dataset to a single summary row. n() counts rows. The result is a 1×1 tibble: n = [count].',
+    'summarise without group_by = one summary row for the whole dataset'
+  )}
+</div>
+
+${navFooter(5)}`;
+
+// MODULE 7 — Advanced dplyr
+MODULES[6] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-3">Phase 3 · Module 7</div>
+  <div class="module-title">Advanced dplyr</div>
+  <div class="module-subtitle">Joins, rename, count, and complex pipe chains — essential for real-world data projects.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Joining Data Frames</div>
+  <div class="step-content">
+    <p>Joins combine two data frames by a shared key column. Understanding which join to use is critical.</p>
+    ${codeBlock('R', `<cm># Two tables to join</cm>
+students <op>&lt;-</op> <fn>data.frame</fn>(id<op>=</op><fn>c</fn>(<num>1</num>,<num>2</num>,<num>3</num>), name<op>=</op><fn>c</fn>(<str>"A"</str>,<str>"B"</str>,<str>"C"</str>))
+scores   <op>&lt;-</op> <fn>data.frame</fn>(id<op>=</op><fn>c</fn>(<num>1</num>,<num>2</num>,<num>4</num>), score<op>=</op><fn>c</fn>(<num>88</num>,<num>72</num>,<num>90</num>))
+
+<cm># left_join — all rows from LEFT, matching from right</cm>
+<fn>left_join</fn>(students, scores, by<op>=</op><str>"id"</str>)
+<cm>#   id name score
+# 1  1    A    88
+# 2  2    B    72
+# 3  3    C    NA   ← C has no match in scores</cm>
+
+<cm># inner_join — only rows with matches in BOTH</cm>
+<fn>inner_join</fn>(students, scores, by<op>=</op><str>"id"</str>)
+<cm>#   id name score
+# 1  1    A    88
+# 2  2    B    72   ← id=3 and id=4 dropped</cm>
+
+<cm># full_join — all rows from both, NA where no match</cm>
+<fn>full_join</fn>(students, scores, by<op>=</op><str>"id"</str>)`)}
+    <div class="callout"> <strong>Rule of thumb:</strong> Use <code class="inline">left_join</code> when your left table is the "master" and you want to enrich it with info from the right, keeping all original rows.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 More dplyr Verbs</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># rename() — rename columns</cm>
+df <op>%&gt;%</op> <fn>rename</fn>(student_name <op>=</op> name, exam_score <op>=</op> score)
+
+<cm># count() — quick frequency table</cm>
+starwars <op>%&gt;%</op> <fn>count</fn>(species, sort <op>=</op> <kw>TRUE</kw>)
+
+<cm># distinct() — remove duplicate rows</cm>
+df <op>%&gt;%</op> <fn>distinct</fn>(species)
+
+<cm># slice() — select rows by position</cm>
+df <op>%&gt;%</op> <fn>slice</fn>(<num>1</num><op>:</op><num>5</num>)         <cm># first 5 rows</cm>
+df <op>%&gt;%</op> <fn>slice_max</fn>(score, n<op>=</op><num>3</num>) <cm># top 3 by score</cm>
+
+<cm># mutate with case_when — conditional new column</cm>
+df <op>%&gt;%</op> <fn>mutate</fn>(
+  grade <op>=</op> <fn>case_when</fn>(
+    score <op>&gt;=</op> <num>90</num> <op>~</op> <str>"A"</str>,
+    score <op>&gt;=</op> <num>80</num> <op>~</op> <str>"B"</str>,
+    score <op>&gt;=</op> <num>70</num> <op>~</op> <str>"C"</str>,
+    <kw>TRUE</kw>        <op>~</op> <str>"F"</str>    <cm># default</cm>
+  )
+)`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm7q1',
+    'You have <code class="inline">orders</code> (all orders) and <code class="inline">customers</code> (registered customers). You want ALL orders, adding customer name where available. Which join?',
+    ['inner_join(orders, customers)', 'left_join(orders, customers)', 'right_join(orders, customers)', 'full_join(orders, customers)'],
+    1,
+    '✅ Correct! left_join keeps all rows from the LEFT table (orders) and adds matching info from the right (customers). Orders without a matching customer get NA for the name column — but they\'re not dropped.',
+    'Which table do you want to keep ALL rows from? That table goes LEFT.'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm7q2',
+    'What does <code class="inline">df %>% count(department, sort = TRUE)</code> return?',
+    ['A logical TRUE/FALSE for each row', 'A frequency table of departments, most frequent first', 'The number of columns in df', 'It filters df to distinct departments'],
+    1,
+    '✅ Correct! count(var) is a shortcut for group_by(var) %>% summarise(n = n()). It returns a tibble with one row per unique value and a column n showing how many times it appeared. sort = TRUE puts the most frequent first.',
+    'count() = group_by() + summarise(n = n())'
+  )}
+</div>
+
+${navFooter(6)}`;
+
+// MODULE 8 — ggplot2
+MODULES[7] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-4">Phase 4 · Module 8</div>
+  <div class="module-title">ggplot2 Fundamentals</div>
+  <div class="module-subtitle">The grammar of graphics — build any chart by layering data, aesthetics, and geometry.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 The Grammar of Graphics</div>
+  <div class="step-content">
+    <p>ggplot2 builds plots in <strong>layers</strong>. Every plot has these three required elements:</p>
+    <ol>
+      <li><code class="inline">ggplot(data, aes(...))</code> — the canvas: which dataset, which variables map to x/y/color/size</li>
+      <li><code class="inline">+ geom_*()</code> — the geometry: what shape to draw (point, bar, line, histogram…)</li>
+      <li><code class="inline">+ labs()</code> — labels: title, axis labels (optional but always add in exams)</li>
+    </ol>
+    ${codeBlock('R', `<fn>library</fn>(ggplot2)
+
+<cm># Scatter plot</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x <op>=</op> wt, y <op>=</op> mpg)) <op>+</op>
+  <fn>geom_point</fn>()
+
+<cm># Add color and labels</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x <op>=</op> wt, y <op>=</op> mpg, color <op>=</op> <fn>factor</fn>(cyl))) <op>+</op>
+  <fn>geom_point</fn>(size <op>=</op> <num>3</num>) <op>+</op>
+  <fn>labs</fn>(
+    title <op>=</op> <str>"Car Weight vs Fuel Efficiency"</str>,
+    x     <op>=</op> <str>"Weight (1000 lbs)"</str>,
+    y     <op>=</op> <str>"Miles Per Gallon"</str>,
+    color <op>=</op> <str>"Cylinders"</str>
+  )`)}
+    ${paneMap('Plots/Files/Help', 'Your plot renders in the Plots pane (bottom-right). Use the left/right arrows to navigate plot history. Export button → PDF/PNG.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Common Geoms</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># Bar chart (categorical x)</cm>
+<fn>ggplot</fn>(mpg, <fn>aes</fn>(x <op>=</op> class)) <op>+</op>
+  <fn>geom_bar</fn>()
+
+<cm># Histogram (continuous distribution)</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x <op>=</op> mpg)) <op>+</op>
+  <fn>geom_histogram</fn>(bins <op>=</op> <num>10</num>, fill <op>=</op> <str>"steelblue"</str>, color <op>=</op> <str>"white"</str>)
+
+<cm># Line chart (time series)</cm>
+<fn>ggplot</fn>(economics, <fn>aes</fn>(x <op>=</op> date, y <op>=</op> unemploy)) <op>+</op>
+  <fn>geom_line</fn>(color <op>=</op> <str>"red"</str>)
+
+<cm># Boxplot (distribution comparison)</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x <op>=</op> <fn>factor</fn>(cyl), y <op>=</op> mpg)) <op>+</op>
+  <fn>geom_boxplot</fn>(fill <op>=</op> <str>"lightblue"</str>)`)}
+    <div class="callout tip"> <strong>aes() rule:</strong> Variables from the dataset go <em>inside</em> <code class="inline">aes()</code>. Fixed visual properties (a specific colour, a fixed size) go <em>outside</em> <code class="inline">aes()</code>, directly in the geom.</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm8q1',
+    'You write: <code class="inline">ggplot(df, aes(x=age, y=income, color="blue")) + geom_point()</code>. The points are NOT blue — they\'re salmon/red. Why?',
+    ['ggplot doesn\'t support the color "blue"', '"blue" inside aes() maps the string literal to a colour scale, not the colour blue', 'geom_point() overrides aes() colors', 'You need colour= not color='],
+    1,
+    '✅ Correct! color inside aes() means "map this variable to color." Passing the string "blue" maps the literal label "blue" to whatever the first default color is. To actually make points blue, put it outside aes(): geom_point(color = "blue").',
+    'Inside aes() = map a variable. Outside aes() = set a fixed value.'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise 2</div>
+  ${mcExercise(
+    'm8q2',
+    'Which geom should you use to show the distribution of a single continuous variable?',
+    ['geom_bar()', 'geom_histogram()', 'geom_point()', 'geom_line()'],
+    1,
+    '✅ Correct! geom_histogram() divides a continuous variable into bins and counts how many values fall in each. geom_bar() is for categorical variables (counts per category). geom_point() needs both x and y.',
+    'Distribution of ONE continuous variable = histogram'
+  )}
+</div>
+
+${navFooter(7)}`;
+
+// MODULE 9 — Advanced ggplot2
+MODULES[8] = () => `
+<div class="module-header">
+  <div class="phase-badge phase-4">Phase 4 · Module 9</div>
+  <div class="module-title">Advanced ggplot2</div>
+  <div class="module-subtitle">Themes, facets, scales, and multi-layer plots — polished, publication-ready visuals.</div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Themes</div>
+  <div class="step-content">
+    <p>Themes control the non-data appearance: background, grid lines, fonts, axis text. Built-in themes:</p>
+    ${codeBlock('R', `p <op>&lt;-</op> <fn>ggplot</fn>(mtcars, <fn>aes</fn>(x<op>=</op>wt, y<op>=</op>mpg)) <op>+</op> <fn>geom_point</fn>()
+
+p <op>+</op> <fn>theme_minimal</fn>()    <cm># clean white, no background</cm>
+p <op>+</op> <fn>theme_classic</fn>()    <cm># classic axes, no gridlines</cm>
+p <op>+</op> <fn>theme_bw</fn>()         <cm># black and white</cm>
+p <op>+</op> <fn>theme_dark</fn>()       <cm># dark background</cm>
+p <op>+</op> <fn>theme_void</fn>()       <cm># blank canvas</cm>
+
+<cm># Fine-grained customisation</cm>
+p <op>+</op> <fn>theme</fn>(
+  plot.title   <op>=</op> <fn>element_text</fn>(size<op>=</op><num>16</num>, face<op>=</op><str>"bold"</str>),
+  axis.title   <op>=</op> <fn>element_text</fn>(size<op>=</op><num>12</num>),
+  panel.grid.minor <op>=</op> <fn>element_blank</fn>()
+)`)}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Facets — Small Multiples</div>
+  <div class="step-content">
+    <p>Facets split one plot into multiple panels by a categorical variable — one panel per group.</p>
+    ${codeBlock('R', `<cm># facet_wrap — wrap panels in rows/cols</cm>
+<fn>ggplot</fn>(mpg, <fn>aes</fn>(x<op>=</op>displ, y<op>=</op>hwy)) <op>+</op>
+  <fn>geom_point</fn>() <op>+</op>
+  <fn>facet_wrap</fn>(<op>~</op> class)            <cm># one panel per car class</cm>
+
+<cm># facet_grid — explicit row and column variables</cm>
+<fn>ggplot</fn>(mpg, <fn>aes</fn>(x<op>=</op>displ, y<op>=</op>hwy)) <op>+</op>
+  <fn>geom_point</fn>() <op>+</op>
+  <fn>facet_grid</fn>(drv <op>~</op> cyl)  <cm># rows = drv, cols = cyl</cm>`)}
+    <div class="callout"> The <code class="inline">~</code> (tilde) in facet formulas means "by". <code class="inline">facet_wrap(~ class)</code> = "wrap by class".</div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag explain">📖 Scales &amp; Multi-Layer Plots</div>
+  <div class="step-content">
+    ${codeBlock('R', `<cm># Scale functions — control axis/colour appearance</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x<op>=</op>wt, y<op>=</op>mpg, color<op>=</op>factor(cyl))) <op>+</op>
+  <fn>geom_point</fn>() <op>+</op>
+  <fn>scale_color_manual</fn>(values <op>=</op> <fn>c</fn>(<str>"4"</str><op>=</op><str>"#2196F3"</str>, <str>"6"</str><op>=</op><str>"#FF9800"</str>, <str>"8"</str><op>=</op><str>"#F44336"</str>)) <op>+</op>
+  <fn>scale_x_continuous</fn>(limits <op>=</op> <fn>c</fn>(<num>1</num>, <num>6</num>)) <op>+</op>
+  <fn>scale_y_continuous</fn>(breaks <op>=</op> <fn>seq</fn>(<num>10</num>, <num>35</num>, by<op>=</op><num>5</num>))
+
+<cm># Multi-layer: points + smoother</cm>
+<fn>ggplot</fn>(mtcars, <fn>aes</fn>(x<op>=</op>wt, y<op>=</op>mpg)) <op>+</op>
+  <fn>geom_point</fn>(color<op>=</op><str>"grey60"</str>) <op>+</op>
+  <fn>geom_smooth</fn>(method<op>=</op><str>"lm"</str>, color<op>=</op><str>"red"</str>, se<op>=</op><kw>TRUE</kw>) <op>+</op>
+  <fn>labs</fn>(title<op>=</op><str>"Weight vs MPG with Linear Trend"</str>) <op>+</op>
+  <fn>theme_minimal</fn>()`)}
+    ${paneMap('Plots/Files/Help', 'Each + layer adds to the current plot. The Plots pane updates on each run. Click Export → Save as PDF for your final project submission.')}
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">Exercise</div>
+  ${mcExercise(
+    'm9q1',
+    'You want the same scatter plot shown separately for each value of a variable called <code class="inline">region</code>. Which code achieves this?',
+    ['filter(df, region) + geom_point()', 'ggplot(df, aes(x,y)) + geom_point() + facet_wrap(~ region)', 'ggplot(df, aes(x,y,group=region)) + geom_point()', 'geom_point(facet = region)'],
+    1,
+    '✅ Correct! facet_wrap(~ region) creates one panel per unique value of region. The tilde (~) is the formula syntax for "by region." This is one of the most powerful ggplot2 features for comparative visualisation.',
+    'Small multiples = facet_wrap(~ variable)'
+  )}
+</div>
+
+<div class="step">
+  <div class="step-tag exercise">✏️ Exercise 2 — Final Challenge</div>
+  ${mcExercise(
+    'm9q2',
+    'Which ggplot2 layer controls non-data visual elements like background color, gridlines, and font sizes?',
+    ['scale_*()', 'aes()', 'theme()', 'labs()'],
+    2,
+    '✅ Correct! theme() (and built-in shortcuts like theme_minimal(), theme_classic()) control all non-data visual properties: background, gridlines, axis text, legend position, font sizes. labs() = text labels. scale_*() = how data values map to visual properties.',
+    'Data appearance = aes/geom/scale. Non-data appearance = theme.'
+  )}
+</div>
+
+<div class="step" style="margin-top:24px">
+  <div style="background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(79,142,247,.12)); border:1px solid var(--green); border-radius:14px; padding:28px; text-align:center;">
+      <h3 style="font-size:1.3rem; color:var(--green); margin-bottom:8px;">All 9 Modules Complete!</h3>
+    <p style="color:#94a3b8; max-width:480px; margin:0 auto; line-height:1.6;">You've covered the full syllabus: variables, vectors, data frames, EDA, packages, dplyr (core + advanced), and ggplot2 (core + advanced). You're exam-ready. Come back to review any module using the sidebar.</p>
+  </div>
+</div>
+
+${navFooter(8)}`;
+
+// ── EXAM PRACTICE: ASSIGNMENT 1 ─────────────────────────────────────────────
+MODULES[9] = () => `
+<div class="module-header">
+  <div class="phase-badge" style="background:rgba(245,158,11,.12);color:var(--yellow)">Practice through Assignments</div>
+  <div class="module-title">Assignment 1: Vectors &amp; Math</div>
+  <div class="module-subtitle">Your first homework — vectors, arithmetic, sampling, and descriptive stats. Every question maps to Modules 1–4.</div>
+</div>
+
+<!-- Q1 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 1</div><div class="q-title">Convert Netanya temperatures from Celsius to Fahrenheit</div></div>
+    <span class="q-module-tag qmt-1">→ Module 1 + 2</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">c()</span>
+    <span class="concept-chip">vectorised arithmetic</span>
+    <span class="concept-chip">formula application</span>
+  </div>
+  <div class="q-text">Create a Celsius vector, then apply the conversion formula to the entire vector in one step — no loops needed.</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q1r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q1r">
+    ${codeBlock('R', `<cm># Create Celsius temperatures</cm>
+(q1a <op>&lt;-</op> <fn>c</fn>(<num>24</num>, <num>25</num>, <num>27</num>))
+<cm># [1] 24 25 27</cm>
+
+<cm># Convert entire vector to Fahrenheit in one operation</cm>
+(q1b <op>&lt;-</op> q1a <op>*</op> <num>9</num><op>/</op><num>5</num> <op>+</op> <num>32</num>)
+<cm># [1] 75.2 77.0 80.6</cm>`)}
+    <div class="insight-box">
+      <strong>Vectorised arithmetic:</strong> <code>q1a * 9/5 + 32</code> applies the formula to <em>every element simultaneously</em>. R has no need for a loop here — this is one of R's core strengths.
+      <br><br><strong>Wrapping in <code>( )</code>:</strong> Surrounding an assignment in parentheses both assigns <em>and</em> prints the result. <code>(x &lt;- 5)</code> is equivalent to <code>x &lt;- 5</code> then <code>print(x)</code>.
+    </div>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 2</div><div class="q-title">Sample random ages, then compute 5 statistics</div></div>
+    <span class="q-module-tag qmt-2">→ Module 2 + 4</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">set.seed()</span>
+    <span class="concept-chip">sample()</span>
+    <span class="concept-chip">named vector c(min=, max=)</span>
+    <span class="concept-chip">table()</span>
+    <span class="concept-chip">mean() · sd()</span>
+    <span class="concept-chip">mean(condition)*100</span>
+  </div>
+  <div class="q-text">Generate a reproducible random sample of ages, then compute: range, frequency table, mean, standard deviation, and percentage of people aged 21+.</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q2r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q2r">
+    ${codeBlock('R', `<fn>set.seed</fn>(<num>69</num>)  <cm># freeze randomness — same result every run</cm>
+ages <op>&lt;-</op> <fn>sample</fn>(<num>18</num><op>:</op><num>35</num>, <fn>sample</fn>(<num>15</num><op>:</op><num>30</num>, <num>1</num>), replace <op>=</op> <kw>TRUE</kw>)
+
+<cm># a — named min/max vector</cm>
+(q2a <op>&lt;-</op> <fn>c</fn>(min <op>=</op> <fn>min</fn>(ages), max <op>=</op> <fn>max</fn>(ages)))
+<cm># min max
+#  18  35</cm>
+
+<cm># b — frequency table</cm>
+(q2b <op>&lt;-</op> <fn>table</fn>(ages))
+
+<cm># c — mean age</cm>
+(q2c <op>&lt;-</op> <fn>mean</fn>(ages))
+
+<cm># d — standard deviation</cm>
+(q2d <op>&lt;-</op> <fn>sd</fn>(ages))
+
+<cm># e — percentage aged 21 or over</cm>
+(q2e <op>&lt;-</op> <fn>mean</fn>(ages <op>&gt;=</op> <num>21</num>) <op>*</op> <num>100</num>)
+<cm># mean() of a logical = proportion (0 to 1); ×100 = percentage</cm>`)}
+    <div class="insight-box">
+      <strong><code>set.seed(n)</code>:</strong> Makes random functions reproducible — anyone running the same seed gets identical results. Always required in homework when using <code>sample()</code>, <code>rnorm()</code>, etc.
+      <br><br><strong>Nested <code>sample()</code>:</strong> The size argument of the outer <code>sample()</code> is itself a random number. So both the <em>values</em> and the <em>length</em> of the vector are random (but frozen by set.seed).
+      <br><br><strong>Named vector:</strong> <code>c(min = min(ages), max = max(ages))</code> creates a vector with named elements — printed as:<br><code>min max<br>&nbsp;18&nbsp;&nbsp;35</code>
+      <br><br><strong><code>mean(ages >= 21) * 100</code>:</strong> From Q1 in Assignment 2 — proportion × 100 = percentage. Master this pattern.
+    </div>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 3</div><div class="q-title">Which pizza deal is better value per dollar?</div></div>
+    <span class="q-module-tag qmt-1">→ Module 1</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">pi (built-in constant)</span>
+    <span class="concept-chip">^ (exponent)</span>
+    <span class="concept-chip">arithmetic chaining</span>
+    <span class="concept-chip">logical comparison</span>
+  </div>
+  <div class="q-text">Pizza A: 60cm diameter, $60. Pizza B: 25cm diameter × 4 pizzas, $49. Compute area per dollar for each and return TRUE if A is better value.</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q3r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q3r">
+    ${codeBlock('R', `<cm># Deal A: one large pizza, 60cm diameter</cm>
+radius_A <op>&lt;-</op> <num>60</num> <op>/</op> <num>2</num>
+area_A   <op>&lt;-</op> pi <op>*</op> radius_A<op>^</op><num>2</num>
+value_A  <op>&lt;-</op> area_A <op>/</op> <num>60</num>      <cm># cm² per dollar</cm>
+
+<cm># Deal B: four smaller pizzas, 25cm diameter each</cm>
+radius_B <op>&lt;-</op> <num>25</num> <op>/</op> <num>2</num>
+area_B   <op>&lt;-</op> (pi <op>*</op> radius_B<op>^</op><num>2</num>) <op>*</op> <num>4</num>
+value_B  <op>&lt;-</op> area_B <op>/</op> <num>49</num>
+
+<cm># TRUE = Deal A is better value per dollar</cm>
+(q3 <op>&lt;-</op> value_A <op>&gt;</op> value_B)
+<cm># [1] TRUE</cm>`)}
+    <div class="insight-box">
+      <strong><code>pi</code></strong> is a built-in constant in R — no need to define it. Others: <code>Inf</code>, <code>NaN</code>, <code>NA</code>, <code>TRUE</code>, <code>FALSE</code>.
+      <br><br><strong><code>^</code> vs <code>**</code>:</strong> R uses <code>^</code> for exponentiation (not <code>**</code> like Python).
+      <br><br>The final comparison <code>value_A > value_B</code> returns a single <code>TRUE</code> or <code>FALSE</code> — a logical vector of length 1.
+    </div>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 4</div><div class="q-title">Create a triangular sequence using rep() with a vector times argument</div></div>
+    <span class="q-module-tag qmt-1">→ Module 2</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">rep()</span>
+    <span class="concept-chip">times as vector</span>
+    <span class="concept-chip">1:7</span>
+  </div>
+  <div class="q-text">Use <code class="inline">rep()</code> to produce: 1, 2 2, 3 3 3, 4 4 4 4, … 7 7 7 7 7 7 7 — each number repeated its own number of times.</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q4r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q4r">
+    ${codeBlock('R', `(q4 <op>&lt;-</op> <fn>rep</fn>(<num>1</num><op>:</op><num>7</num>, times <op>=</op> <num>1</num><op>:</op><num>7</num>))
+<cm># [1] 1 2 2 3 3 3 4 4 4 4 5 5 5 5 5 6 6 6 6 6 6 7 7 7 7 7 7 7</cm>`)}
+    <div class="insight-box">
+      <strong><code>rep(x, times)</code> with vector <code>times</code>:</strong> When <code>times</code> is a vector, each element of <code>x</code> is repeated the corresponding number of times. So <code>rep(1:7, times=1:7)</code> repeats 1 once, 2 twice, 3 three times, …, 7 seven times.
+      <br><br>Compare with <code>rep(1:7, each=3)</code> which repeats <em>every</em> element 3 times: 1 1 1, 2 2 2, … vs <code>times=3</code> which repeats the whole vector 3 times: 1 2 3 4 5 6 7 1 2 3...
+    </div>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 5</div><div class="q-title">Compute 11! (eleven factorial) using prod()</div></div>
+    <span class="q-module-tag qmt-1">→ Module 2</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">prod()</span>
+    <span class="concept-chip">1:n sequence</span>
+    <span class="concept-chip">factorial pattern</span>
+  </div>
+  <div class="q-text">Compute the product of all integers from 1 to 11 — that is, 11 factorial (11!).</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q5r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q5r">
+    ${codeBlock('R', `n <op>&lt;-</op> <num>11</num>
+(q5 <op>&lt;-</op> <fn>prod</fn>(<num>1</num><op>:</op>n))
+<cm># [1] 39916800</cm>
+
+<cm># Equivalent alternatives</cm>
+<fn>factorial</fn>(<num>11</num>)         <cm># built-in factorial function</cm>
+<fn>Reduce</fn>(<str>"*"</str>, <num>1</num><op>:</op><num>11</num>)   <cm># functional approach</cm>`)}
+    <div class="insight-box">
+      <strong><code>prod()</code></strong> multiplies all elements of a vector together. <code>prod(1:n)</code> = 1×2×3×...×n = n!
+      <br><br>R also has <code>factorial(n)</code> as a direct function, but using <code>prod(1:n)</code> shows you understand vectorised reduction — which is what exams test.
+      <br><br>Contrast: <code>sum(1:n)</code> = 1+2+…+n = n(n+1)/2 · <code>prod(1:n)</code> = n!
+    </div>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 6</div><div class="q-title">Compute a weighted grade average (GPA-style)</div></div>
+    <span class="q-module-tag qmt-1">→ Module 2</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">element-wise multiplication</span>
+    <span class="concept-chip">sum(a * b) / sum(b)</span>
+    <span class="concept-chip">weighted average pattern</span>
+  </div>
+  <div class="q-text">Grades: 90, 85, 88, 92. Credit points: 3, 4, 2, 3. Compute the weighted average (heavier courses count more).</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q6r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q6r">
+    ${codeBlock('R', `grades  <op>&lt;-</op> <fn>c</fn>(<num>90</num>, <num>85</num>, <num>88</num>, <num>92</num>)
+points  <op>&lt;-</op> <fn>c</fn>(<num>3</num>, <num>4</num>, <num>2</num>, <num>3</num>)
+
+(q6 <op>&lt;-</op> <fn>sum</fn>(grades <op>*</op> points) <op>/</op> <fn>sum</fn>(points))
+<cm># [1] 88.5  (weighted mean)</cm>
+
+<cm># vs simple mean — different result</cm>
+<fn>mean</fn>(grades)   <cm># [1] 88.75</cm>`)}
+    <div class="insight-box">
+      <strong>Weighted average formula:</strong> Σ(value × weight) / Σ(weights). In R: <code>sum(grades * points) / sum(points)</code>.
+      <br><br><strong>Why it differs from <code>mean()</code>:</strong> A simple mean treats all courses equally. Weighted mean gives more influence to the 4-credit course (85) — pulling the average slightly down compared to <code>mean(grades)</code>.
+      <br><br>This exact pattern is used in GPA calculations, portfolio returns, and population-weighted statistics.
+    </div>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 7</div><div class="q-title">Shopping cart: subtotal, tax, and total</div></div>
+    <span class="q-module-tag qmt-1">→ Module 2</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">element-wise multiplication</span>
+    <span class="concept-chip">sum()</span>
+    <span class="concept-chip">sequential derivation</span>
+    <span class="concept-chip">tax calculation</span>
+  </div>
+  <div class="q-text">Quantities: 3, 2, 1, 5 units. Prices: $19.99, $45.50, $20.99, $7.99. Tax: 17%. Compute subtotal, tax amount, and total.</div>
+  <button class="reveal-btn" onclick="toggleReveal('a1q7r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="a1q7r">
+    ${codeBlock('R', `quantities  <op>&lt;-</op> <fn>c</fn>(<num>3</num>, <num>2</num>, <num>1</num>, <num>5</num>)
+unit_prices <op>&lt;-</op> <fn>c</fn>(<num>19.99</num>, <num>45.50</num>, <num>20.99</num>, <num>7.99</num>)
+tax_rate    <op>&lt;-</op> <num>0.17</num>
+
+<cm># a — subtotal (sum of quantity × price per item)</cm>
+(q7a <op>&lt;-</op> <fn>sum</fn>(quantities <op>*</op> unit_prices))
+<cm># [1] 191.90</cm>
+
+<cm># b — tax amount</cm>
+(q7b <op>&lt;-</op> q7a <op>*</op> tax_rate)
+<cm># [1] 32.62</cm>
+
+<cm># c — total including tax</cm>
+(q7c <op>&lt;-</op> q7a <op>+</op> q7b)
+<cm># [1] 224.52</cm>`)}
+    <div class="insight-box">
+      <strong>Element-wise then aggregate:</strong> <code>quantities * unit_prices</code> produces a per-item total vector (e.g. 59.97, 91.00, 20.99, 39.95). Then <code>sum()</code> collapses it to a single subtotal.
+      <br><br><strong>Sequential derivation:</strong> Each result builds on the previous one — <code>q7b</code> uses <code>q7a</code>, and <code>q7c</code> uses both. This step-by-step chaining makes the code easy to audit and debug.
+    </div>
+  </div>
+</div>
+
+<div style="background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(79,142,247,.08));border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:24px;text-align:center;margin-top:8px;">
+    <h3 style="font-size:1.05rem;color:var(--yellow);margin-bottom:12px;">Patterns this assignment tests</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+    <span class="concept-chip" style="color:var(--text)">(x &lt;- ...) assigns + prints</span>
+    <span class="concept-chip" style="color:var(--text)">vectorised arithmetic</span>
+    <span class="concept-chip" style="color:var(--text)">mean(condition)*100 = %</span>
+    <span class="concept-chip" style="color:var(--text)">set.seed() for reproducibility</span>
+    <span class="concept-chip" style="color:var(--text)">rep(x, times=vector)</span>
+    <span class="concept-chip" style="color:var(--text)">prod() = factorial</span>
+    <span class="concept-chip" style="color:var(--text)">sum(a*b)/sum(b) = weighted mean</span>
+    <span class="concept-chip" style="color:var(--text)">named vectors c(min=, max=)</span>
+  </div>
+</div>
+
+<div class="module-footer" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+  <button class="btn btn-secondary" onclick="goModule(8)">← Advanced ggplot2</button>
+  <button class="btn btn-primary" onclick="goModule(10)">Assignment 2: Ames Housing →</button>
+</div>`;
+
+// ── EXAM PRACTICE: ASSIGNMENT 2 ─────────────────────────────────────────────
+MODULES[10] = () => `
+<div class="module-header">
+  <div class="phase-badge" style="background:rgba(245,158,11,.12);color:var(--yellow)">Practice through Assignments</div>
+  <div class="module-title">Assignment 2: Ames Housing</div>
+  <div class="module-subtitle">Real homework — every question mapped back to the module that teaches it. Read the question, try it yourself, then reveal the solution.</div>
+</div>
+
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:28px;font-size:0.85rem;color:#94a3b8;line-height:1.6;">
+  <strong style="color:var(--text)">Dataset:</strong> <code class="inline">Ames_Housing.csv</code> — 2,930 house sales in Ames, Iowa. Load it with:
+  ${codeBlock('R', `<fn>library</fn>(dplyr)
+dat <op>&lt;-</op> <fn>read.csv</fn>(<str>"Ames_Housing.csv"</str>)`)}
+</div>
+
+<!-- Q1 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 1</div><div class="q-title">Do more than half the houses have at least one fireplace?</div></div>
+    <span class="q-module-tag qmt-2">→ Module 4: EDA</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">table()</span>
+    <span class="concept-chip">mean()</span>
+    <span class="concept-chip">logical condition</span>
+    <span class="concept-chip">comparison operators</span>
+  </div>
+  <div class="q-text">Use <code class="inline">table()</code> to see the distribution of fireplaces, then use <code class="inline">mean()</code> with a logical condition to answer whether >50% of houses have at least 1.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q1r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q1r">
+    ${codeBlock('R', `<fn>table</fn>(dat<op>$</op>fireplaces)
+<cm># 0    1    2    3
+# 1000 1268 619  43   ← exact counts per number of fireplaces</cm>
+
+<fn>mean</fn>(dat<op>$</op>fireplaces <op>&gt;=</op> <num>1</num>) <op>&gt;</op> <num>0.5</num>
+<cm># TRUE  ← majority have at least 1</cm>`)}
+    <div class="insight-box">
+      <strong>Key insight:</strong> <code class="inline">dat$fireplaces >= 1</code> creates a logical vector (TRUE/FALSE). <code class="inline">mean()</code> on a logical vector = proportion of TRUEs (TRUE counts as 1, FALSE as 0). So <code class="inline">mean(...) > 0.5</code> asks "is the proportion above 50%?"
+      <br><br>This pattern — <code class="inline">mean(condition)</code> — is one of the most common exam tricks. Learn it well.
+    </div>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 2</div><div class="q-title">In 2010, which month had the most house sales?</div></div>
+    <span class="q-module-tag qmt-2">→ Module 3 + 4</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">table()</span>
+    <span class="concept-chip">subset()</span>
+    <span class="concept-chip">|> pipe (base R)</span>
+    <span class="concept-chip">chaining</span>
+  </div>
+  <div class="q-text">First check all years. Then filter to 2010 only and count sales by month.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q2r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q2r">
+    ${codeBlock('R', `<cm># All years — overview</cm>
+dat<op>$</op>yr_sold <op>|&gt;</op> <fn>table</fn>()
+
+<cm># Filter to 2010, then count by month</cm>
+<fn>subset</fn>(dat, yr_sold <op>==</op> <num>2010</num>)<op>$</op>mo_sold <op>|&gt;</op> <fn>table</fn>()
+<cm>#  5  6  7  8  ...  ← month numbers; highest = most sales</cm>`)}
+    <div class="insight-box">
+      <strong>Key insight:</strong> <code class="inline">|></code> is the <strong>base R pipe</strong> (R 4.1+). It works exactly like <code class="inline">%>%</code> from dplyr — passes the left side as the first argument to the right side. Both are acceptable in exams.
+      <br><br><code class="inline">subset(df, condition)</code> = <code class="inline">filter(df, condition)</code> in base R. Both return a filtered data frame.
+    </div>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 3</div><div class="q-title">How many houses appear in both the top-10 by lot area AND top-10 by living area (2010 sales)?</div></div>
+    <span class="q-module-tag qmt-3">→ Module 3 + 7</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">order()</span>
+    <span class="concept-chip">head()</span>
+    <span class="concept-chip">anonymous function \\(df)</span>
+    <span class="concept-chip">%in%</span>
+    <span class="concept-chip">set overlap</span>
+  </div>
+  <div class="q-text">Sort 2010 houses by each area column independently, take top 10 each, then count the overlap.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q3r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q3r">
+    ${codeBlock('R', `top_lot <op>&lt;-</op> <fn>subset</fn>(dat, yr_sold <op>==</op> <num>2010</num>) <op>|&gt;</op>
+  (<op>\</op>(df) df[<fn>order</fn>(df<op>$</op>lot_area, decreasing <op>=</op> <kw>TRUE</kw>), ])() <op>|&gt;</op>
+  <fn>head</fn>(<num>10</num>)
+
+top_living <op>&lt;-</op> <fn>subset</fn>(dat, yr_sold <op>==</op> <num>2010</num>) <op>|&gt;</op>
+  (<op>\</op>(df) df[<fn>order</fn>(df<op>$</op>gr_liv_area, decreasing <op>=</op> <kw>TRUE</kw>), ])() <op>|&gt;</op>
+  <fn>head</fn>(<num>10</num>)
+
+<cm># Count overlap by row names (order = row index)</cm>
+<fn>sum</fn>(<fn>rownames</fn>(top_lot) <op>%in%</op> <fn>rownames</fn>(top_living))`)}
+    <div class="insight-box">
+      <strong>Key insight — anonymous function <code style="color:var(--accent)">\\(df) ...</code>:</strong> This is a shorthand lambda (R 4.1+). It wraps a sorting operation inside the pipe chain. You can read it as: "take the piped data frame, call it df, and sort its rows by lot_area descending."
+      <br><br><strong><code>%in%</code></strong> tests membership: <code>c(1,2,3) %in% c(2,4)</code> → <code>FALSE TRUE FALSE</code>. <code>sum(%in%)</code> counts how many match.
+      <br><br>Note the original code uses <code>$order</code> which is a column — if that column doesn't exist you'd use <code>rownames()</code> instead.
+    </div>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 4</div><div class="q-title">Pool analysis — flag, filter, sum, classify, compare, range</div></div>
+    <span class="q-module-tag qmt-2">→ Module 3 + 4</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">ifelse()</span>
+    <span class="concept-chip">new columns</span>
+    <span class="concept-chip">tapply()</span>
+    <span class="concept-chip">diff() + range()</span>
+    <span class="concept-chip">multi-condition &amp;</span>
+  </div>
+  <div class="q-text">A 6-part question: create a pool indicator, filter to pool houses, total their prices, define "impressive" pools with 3 conditions, compare mean prices by pool quality, and find the year-built range of impressive-pool houses.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q4r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q4r">
+    ${codeBlock('R', `<cm># 1. Binary pool indicator column</cm>
+dat<op>$</op>has_pool <op>&lt;-</op> <fn>ifelse</fn>(dat<op>$</op>pool_area <op>&gt;</op> <num>0</num>, <num>1</num>, <num>0</num>)
+
+<cm># 2. Filter to houses with pools</cm>
+pools_only <op>&lt;-</op> <fn>subset</fn>(dat, pool_area <op>&gt;</op> <num>0</num>)
+
+<cm># 3. Total sale price of pool houses</cm>
+pools_only<op>$</op>sale_price <op>|&gt;</op> <fn>sum</fn>()
+
+<cm># 4. "Impressive" pool: Good/Excellent quality AND ≥500 sqft AND ≥10% of living area</cm>
+dat<op>$</op>impressive_pool <op>&lt;-</op> <fn>ifelse</fn>(
+  (dat<op>$</op>pool_qc <op>==</op> <str>"Gd"</str> <op>|</op> dat<op>$</op>pool_qc <op>==</op> <str>"Ex"</str>) <op>&amp;</op>
+    dat<op>$</op>pool_area <op>&gt;=</op> <num>500</num> <op>&amp;</op>
+    dat<op>$</op>pool_area <op>&gt;=</op> (<num>0.10</num> <op>*</op> dat<op>$</op>gr_liv_area),
+  <num>1</num>, <num>0</num>
+)
+
+<cm># 5. Mean sale price: impressive vs non-impressive pools</cm>
+pools_only <op>&lt;-</op> <fn>subset</fn>(dat, pool_area <op>&gt;</op> <num>0</num>)
+pools_only<op>$</op>sale_price <op>|&gt;</op> <fn>tapply</fn>(pools_only<op>$</op>impressive_pool, mean)
+
+<cm># 6. Year-built range of impressive-pool houses</cm>
+impressive_only <op>&lt;-</op> <fn>subset</fn>(dat, impressive_pool <op>==</op> <num>1</num>)
+<fn>diff</fn>(<fn>range</fn>(impressive_only<op>$</op>year_built))
+<cm># range() returns c(min, max); diff() computes max - min</cm>`)}
+    <div class="insight-box">
+      <strong>tapply(values, groups, function):</strong> Applies a function to values split by a grouping variable. <code>tapply(price, impressive_pool, mean)</code> = mean price for each value of impressive_pool (0 and 1).
+      <br><br><strong>diff(range(x)):</strong> A compact idiom for <code>max(x) - min(x)</code>. <code>range(x)</code> = <code>c(min,max)</code>; <code>diff()</code> = second minus first.
+      <br><br><strong>Multi-condition ifelse:</strong> Use <code>&</code> for AND, <code>|</code> for OR. Parentheses around the OR clause prevent operator precedence bugs.
+    </div>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 5</div><div class="q-title">Build a multi-criteria "desirability score" and find how many houses reach the maximum</div></div>
+    <span class="q-module-tag qmt-2">→ Module 3 + 4</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">ifelse()</span>
+    <span class="concept-chip">cumulative assignment</span>
+    <span class="concept-chip">is.na()</span>
+    <span class="concept-chip">max()</span>
+    <span class="concept-chip">sum(condition)</span>
+  </div>
+  <div class="q-text">Start each house at score 0, then add/subtract points for 7 criteria using <code class="inline">ifelse()</code> layered on top of each other. Find how many houses hit the max possible score.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q5r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q5r">
+    ${codeBlock('R', `dat<op>$</op>score <op>&lt;-</op> <num>0</num>
+
+<cm># +2 if garage ≥ 500 sqft</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>garage_area <op>&gt;=</op> <num>500</num>, <num>2</num>, <num>0</num>)
+
+<cm># -2 if no garage at all</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>garage_area <op>==</op> <num>0</num>, <op>-</op><num>2</num>, <num>0</num>)
+
+<cm># +1 for Good or Excellent kitchen</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>kitchen_qual <op>==</op> <str>"Gd"</str> <op>|</op> dat<op>$</op>kitchen_qual <op>==</op> <str>"Ex"</str>, <num>1</num>, <num>0</num>)
+
+<cm># +1 if fence exists (not NA)</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(<op>!</op><fn>is.na</fn>(dat<op>$</op>fence), <num>1</num>, <num>0</num>)
+
+<cm># +2 if at least 1 basement full bath</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>bsmt_full_bath <op>&gt;=</op> <num>1</num>, <num>2</num>, <num>0</num>)
+
+<cm># -3 if basement area = 0 (no basement)</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>total_bsmt_sf <op>==</op> <num>0</num>, <op>-</op><num>3</num>, <num>0</num>)
+
+<cm># +1 if sale price ≤ $200,000</cm>
+dat<op>$</op>score <op>&lt;-</op> dat<op>$</op>score <op>+</op> <fn>ifelse</fn>(dat<op>$</op>sale_price <op>&lt;=</op> <num>200000</num>, <num>1</num>, <num>0</num>)
+
+max_score <op>&lt;-</op> <fn>max</fn>(dat<op>$</op>score)
+<fn>sum</fn>(dat<op>$</op>score <op>==</op> max_score)  <cm># how many houses hit the max</cm>`)}
+    <div class="insight-box">
+      <strong>Pattern — cumulative ifelse scoring:</strong> Each line adds (or subtracts) to the same column. The right side always includes the current value of <code>dat$score</code> so points accumulate.
+      <br><br><strong><code>!is.na(x)</code></strong> = "x is NOT missing". Used here to check if a fence exists (NA means no fence in this dataset).
+      <br><br><strong><code>sum(dat$score == max_score)</code></strong> = count rows where score equals the maximum. This is the <code>mean(condition)</code> pattern from Q1, but for counting instead of proportions.
+    </div>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 6</div><div class="q-title">Do houses where garage spaces > bedrooms sell for more than average?</div></div>
+    <span class="q-module-tag qmt-2">→ Module 3 + 4</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">column comparison</span>
+    <span class="concept-chip">conditional subsetting</span>
+    <span class="concept-chip">mean()</span>
+  </div>
+  <div class="q-text">Compare two columns against each other to create a logical filter, then compare the resulting mean against the overall mean.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q6r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q6r">
+    ${codeBlock('R', `<cm># Mean price where garage_cars > bedroom_abv_gr (column vs column)</cm>
+avg_price_garage <op>&lt;-</op> <fn>mean</fn>(dat<op>$</op>sale_price[dat<op>$</op>garage_cars <op>&gt;</op> dat<op>$</op>bedroom_abv_gr])
+
+<cm># Overall mean price</cm>
+avg_normal_price <op>&lt;-</op> <fn>mean</fn>(dat<op>$</op>sale_price)
+
+avg_price_garage <op>&gt;</op> avg_normal_price   <cm># TRUE or FALSE</cm>`)}
+    <div class="insight-box">
+      <strong>Column vs column comparison:</strong> <code>dat$garage_cars > dat$bedroom_abv_gr</code> compares values row-by-row across two columns, producing a logical vector. This is then used inside <code>[]</code> to subset sale_price.
+      <br><br>The syntax <code>mean(dat$sale_price[condition])</code> is base-R equivalent of dplyr's <code>filter() %>% summarise(mean(...))</code>.
+    </div>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 7</div><div class="q-title">Recode the electrical system abbreviations to their full descriptions</div></div>
+    <span class="q-module-tag qmt-1">→ Module 1 + 3</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">string replacement</span>
+    <span class="concept-chip">logical subsetting ←</span>
+    <span class="concept-chip">table()</span>
+    <span class="concept-chip">column recoding</span>
+  </div>
+  <div class="q-text">Replace each short code in the electrical column with a full human-readable label using logical index assignment.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q7r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q7r">
+    ${codeBlock('R', `<fn>table</fn>(dat<op>$</op>electrical)   <cm># before — see abbreviations</cm>
+
+dat<op>$</op>electrical[dat<op>$</op>electrical <op>==</op> <str>"SBrkr"</str>] <op>&lt;-</op> <str>"Standard Circuit Breakers &amp; Romex"</str>
+dat<op>$</op>electrical[dat<op>$</op>electrical <op>==</op> <str>"FuseA"</str>] <op>&lt;-</op> <str>"Fuse Box over 60 AMP and all Romex wiring (Average)"</str>
+dat<op>$</op>electrical[dat<op>$</op>electrical <op>==</op> <str>"FuseF"</str>] <op>&lt;-</op> <str>"60 AMP Fuse Box and mostly Romex wiring (Fair)"</str>
+dat<op>$</op>electrical[dat<op>$</op>electrical <op>==</op> <str>"FuseP"</str>] <op>&lt;-</op> <str>"60 AMP Fuse Box and mostly knob &amp; tube wiring (poor)"</str>
+dat<op>$</op>electrical[dat<op>$</op>electrical <op>==</op> <str>"Mix"</str>]   <op>&lt;-</op> <str>"Mixed"</str>
+
+<fn>table</fn>(dat<op>$</op>electrical)   <cm># after — full labels</cm>`)}
+    <div class="insight-box">
+      <strong>Pattern — index-assignment recoding:</strong> <code>vec[vec == "old"] &lt;- "new"</code> selects positions where the condition is TRUE and overwrites them. Repeat for each code. This is base-R recoding — dplyr's equivalent is <code>mutate(col = case_when(...))</code> (covered in Module 7).
+    </div>
+  </div>
+</div>
+
+<!-- Q8 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 8</div><div class="q-title">How many houses have missing masonry veneer area? What is the mean (excluding NAs)?</div></div>
+    <span class="q-module-tag qmt-2">→ Module 4: EDA</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">is.na()</span>
+    <span class="concept-chip">sum(is.na())</span>
+    <span class="concept-chip">mean(na.rm=TRUE)</span>
+    <span class="concept-chip">missing value handling</span>
+  </div>
+  <div class="q-text">Count the NAs, then compute the mean while ignoring them. This pattern appears in almost every real dataset.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q8r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q8r">
+    ${codeBlock('R', `<cm># Count missing values</cm>
+<fn>sum</fn>(<fn>is.na</fn>(dat<op>$</op>mas_vnr_area))
+
+<cm># Mean excluding NAs</cm>
+<fn>mean</fn>(dat<op>$</op>mas_vnr_area, na.rm <op>=</op> <kw>TRUE</kw>)`)}
+    <div class="insight-box">
+      <strong>Critical exam pattern:</strong> Without <code>na.rm = TRUE</code>, <code>mean()</code> returns NA if any value is missing. The same applies to <code>sum()</code>, <code>sd()</code>, <code>var()</code>, <code>median()</code>.
+      <br><br><strong><code>sum(is.na(x))</code></strong> counts NAs: <code>is.na()</code> returns TRUE/FALSE, and <code>sum()</code> treats TRUE as 1. For a whole data frame: <code>colSums(is.na(dat))</code> gives the NA count per column.
+    </div>
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="q-block">
+  <div class="q-header">
+    <div><div class="q-number">Question 9</div><div class="q-title">Filter houses with misc. features (excluding sheds) and export to CSV</div></div>
+    <span class="q-module-tag qmt-3">→ Module 3 + 7</span>
+  </div>
+  <div class="concept-row">
+    <span class="concept-chip">which()</span>
+    <span class="concept-chip">!= (not equal)</span>
+    <span class="concept-chip">multi-column select</span>
+    <span class="concept-chip">write.csv()</span>
+    <span class="concept-chip">getwd()</span>
+  </div>
+  <div class="q-text">Select rows where misc_val > 0 and the feature isn't a shed. Keep only 4 specific columns. Write to CSV and confirm the working directory.</div>
+  <button class="reveal-btn" onclick="toggleReveal('q9r')">▶ Show solution &amp; explanation</button>
+  <div class="reveal-content" id="q9r">
+    ${codeBlock('R', `<cm># Count houses with any misc. value</cm>
+<fn>sum</fn>(dat<op>$</op>misc_val <op>&gt;</op> <num>0</num>, na.rm <op>=</op> <kw>TRUE</kw>)
+<fn>table</fn>(dat<op>$</op>misc_feature)
+
+<cm># Filter: misc_val > 0 AND not a shed; select 4 columns</cm>
+filtered_df <op>&lt;-</op> dat[<fn>which</fn>(dat<op>$</op>misc_val <op>&gt;</op> <num>0</num> <op>&amp;</op> dat<op>$</op>misc_feature <op>!=</op> <str>"Shed"</str>),
+                    <fn>c</fn>(<str>"lot_area"</str>, <str>"sale_price"</str>, <str>"sale_type"</str>, <str>"yr_sold"</str>)]
+
+<cm># Export to CSV (no row numbers)</cm>
+<fn>write.csv</fn>(filtered_df, <str>"filtered_houses.csv"</str>, row.names <op>=</op> <kw>FALSE</kw>)
+
+<cm># See where the file was saved</cm>
+<fn>getwd</fn>()`)}
+    <div class="insight-box">
+      <strong><code>which(condition)</code></strong> returns the <em>integer positions</em> (row indices) where the condition is TRUE, instead of a logical vector. It's safer inside <code>df[, ]</code> because it skips NAs automatically — <code>df[NA, ]</code> would produce NA rows.
+      <br><br><strong>Column selection by name vector:</strong> <code>df[rows, c("col1","col2")]</code> keeps only those columns — equivalent to dplyr's <code>select(col1, col2)</code>.
+      <br><br><strong><code>write.csv(..., row.names = FALSE)</code></strong> — always include <code>row.names = FALSE</code> to avoid an ugly extra column of row numbers in your output file.
+    </div>
+  </div>
+</div>
+
+<div style="background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(79,142,247,.08));border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:24px;text-align:center;margin-top:8px;">
+    <h3 style="font-size:1.05rem;color:var(--yellow);margin-bottom:8px;">Patterns this assignment tests</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;">
+    <span class="concept-chip" style="color:var(--text)">mean(condition) = proportion</span>
+    <span class="concept-chip" style="color:var(--text)">ifelse() for new columns</span>
+    <span class="concept-chip" style="color:var(--text)">na.rm = TRUE always</span>
+    <span class="concept-chip" style="color:var(--text)">sum(condition) = count</span>
+    <span class="concept-chip" style="color:var(--text)">diff(range()) = spread</span>
+    <span class="concept-chip" style="color:var(--text)">which() vs logical index</span>
+    <span class="concept-chip" style="color:var(--text)">tapply() = group mean</span>
+    <span class="concept-chip" style="color:var(--text)">index-assignment recoding</span>
+  </div>
+</div>
+
+<div class="module-footer" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+  <button class="btn btn-secondary" onclick="goModule(9)">← Assignment 1: Vectors &amp; Math</button>
+  <span style="color:var(--green);font-weight:700;">All practice complete</span>
+</div>`;
+
+function toggleReveal(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  const btn = el.previousElementSibling;
+  btn.textContent = el.classList.contains('open') ? '▼ Hide solution' : '▶ Show solution & explanation';
+}
+
+// ── FREE-TEXT EXERCISE CHECKER ───────────────────────────────────────────────
+function checkFree(inputId, fbId) {
+  const val = document.getElementById(inputId).value.trim().toLowerCase();
+  const fb = document.getElementById(fbId);
+  fb.classList.add('show');
+  const hasAssign = val.includes('<-') || val.includes('=');
+  const hasClass = val.includes('class(');
+  const hasString = val.includes('"') || val.includes("'");
+  if (hasAssign && hasClass && hasString) {
+    fb.className = 'feedback correct-fb show';
+    fb.textContent = '✅ Looks great! You used assignment (<-), created a character variable (quoted string), and checked types with class(). Well done!';
+    markDone(currentModuleIdx);
+  } else if (hasAssign && !hasClass) {
+    fb.className = 'feedback wrong-fb show';
+    fb.textContent = '⚠️ You created the variables — but did you add class(student_name), class(grade), class(passed) to check the types?';
+  } else {
+    fb.className = 'feedback wrong-fb show';
+    fb.textContent = '⚠️ Make sure to use <- for assignment, put your name in quotes ("..."), and call class() on each variable.';
+  }
+}
+</script>
+</body>
+</html>
